@@ -18,6 +18,7 @@ import time
 from pydantic import BaseModel, ValidationError
 
 from agent import MODEL, client          # same LLM provider as the triage agent
+from flag_admin import switch_on
 from flags import FLAG_BANNER, FLAG_BLOCK_LINKS, read_flags
 from wave import find_waves, load_csv
 
@@ -139,8 +140,15 @@ def ask_human(step):
 
 
 def apply(flag):
-    """Switch a flag ON. DRY RUN for now: the Flagsmith Admin API comes next."""
-    print(f"  [dry run] would switch ON '{flag}' in Flagsmith")
+    """Switch a flag ON in Flagsmith. Returns True only if Flagsmith confirms."""
+    try:
+        if switch_on(flag):
+            print(f"  Flagsmith: '{flag}' is now ON")
+            return True
+        print(f"  FAILED: Flagsmith did not confirm '{flag}' is ON")
+    except Exception as e:                       # bad key, network, lookup problem
+        print(f"  FAILED to switch ON '{flag}': {e}")
+    return False
 
 
 def main(emails_path="data/inbox_today.csv", results_path="results_today.csv"):
@@ -164,14 +172,14 @@ def main(emails_path="data/inbox_today.csv", results_path="results_today.csv"):
     print("\nResponse:")
     for step in steps:
         if step["mode"] == "auto":
-            apply(step["flag"])
-            if first_action_seconds is None:
-                first_action_seconds = time.perf_counter() - started
-            print(f"  DID ALONE (low risk): {step['flag']} - {step['why']}")
+            if apply(step["flag"]):
+                if first_action_seconds is None:
+                    first_action_seconds = time.perf_counter() - started
+                print(f"  DID ALONE (low risk): {step['flag']} - {step['why']}")
         elif step["mode"] == "ask":
             if ask_human(step):
-                apply(step["flag"])
-                print(f"  APPROVED by human: {step['flag']}")
+                if apply(step["flag"]):
+                    print(f"  APPROVED by human: {step['flag']}")
             else:
                 print(f"  DECLINED by human: {step['flag']} stays OFF")
         else:
