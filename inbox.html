@@ -3,80 +3,215 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Inbox · protected by PHD1</title>
 <style>
+  /* ---------- Tokens ----------
+     Type: one sans for content, one mono for all metadata.
+     Colour: black, white, grays. Blue = unread dots only. Orange = suspicious only.
+     Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48. One radius: 8px. */
   :root {
-    --bg: #f4f5f7; --panel: #ffffff; --line: #e3e5e9; --text: #1d2026;
-    --muted: #6b7280; --select: #eef2ff; --accent: #4f46e5;
-    --warn-bg: #fff4d6; --warn-text: #7a4b00; --warn-line: #f2c55c;
-    --block-bg: #fdecec; --block-text: #9b1c1c; --ok: #157347;
+    --sans: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    --mono: "SF Mono", ui-monospace, "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --canvas: #ececea; --window: #ffffff; --chrome: #ffffff; --chrome-filter: none;   /* light: clean solid white header, no blur smudge */
+    --ink: #111111; --ink2: #666666; --ink3: #8c8c8c;   /* ink2 = text (AA), ink3 = icons only */
+    --hair: rgba(0, 0, 0, 0.08); --select: #f4f4f4; --fill: rgba(0, 0, 0, 0.045);
+    --blue: #007aff; --orange: #f08c00; --orange-ink: #b85f00;
+    --shadow: 0 32px 80px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.03);
+    --toast-bg: #000000; --toast-ink: #ffffff;
+    --r: 8px;
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+    --ease: cubic-bezier(0.2, 0.9, 0.25, 1);   /* critically damped feel: no overshoot */
   }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --canvas: #050505; --window: #121212; --chrome: rgba(18, 18, 18, 0.88); --chrome-filter: blur(30px);
+      --ink: #f2f2f2; --ink2: #a3a3a3; --ink3: #737373;
+      --hair: rgba(255, 255, 255, 0.15); --select: #1c1c1c; --fill: rgba(255, 255, 255, 0.06);
+      --blue: #0a84ff; --orange: #ff9f0a; --orange-ink: #ffb340;
+      --shadow: 0 32px 80px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.3);
+      --toast-bg: #ffffff; --toast-ink: #000000;       /* inverted so it stays visible on a dark canvas */
+    }
+  }
+  @media (prefers-contrast: more) {
+    :root { --ink2: #3d3d3d; --ink3: #6b6b6b; --hair: rgba(0, 0, 0, 0.22); }
+  }
+  @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+    :root { --ink2: #cfcfcf; --ink3: #9a9a9a; --hair: rgba(255, 255, 255, 0.28); }
+  }
+
   * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-         background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
-  header { display: flex; align-items: center; gap: 16px; padding: 12px 20px;
-           background: var(--panel); border-bottom: 1px solid var(--line); }
-  header h1 { font-size: 17px; margin: 0; font-weight: 650; }
-  header .who { color: var(--muted); font-size: 13px; }
-  .status { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .chip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line);
-          background: var(--bg); color: var(--muted); transition: background .3s, color .3s; }
-  .chip.on-warn { background: var(--warn-bg); color: var(--warn-text); border-color: var(--warn-line); }
-  .chip.on-block { background: var(--block-bg); color: var(--block-text); border-color: #f3b4b4; }
-  .chip.flash { animation: flash 1.2s ease-out; }
-  @keyframes flash { 0% { transform: scale(1.12); } 100% { transform: scale(1); } }
-  .checked { font-size: 12px; color: var(--muted); }
-  main { flex: 1; display: grid; grid-template-columns: minmax(300px, 38%) 1fr; min-height: 0; }
-  #list { overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); }
-  .item { padding: 12px 18px; border-bottom: 1px solid var(--line); cursor: pointer; }
-  .item:hover { background: #f8f9fb; }
+  html, body { height: 100%; }
+  body { margin: 0; padding: var(--s6) var(--s6) var(--s4); display: flex; flex-direction: column; gap: var(--s4);
+         background: var(--canvas); color: var(--ink); font: 15px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  .mono { font-family: var(--mono); font-size: 12px; letter-spacing: 0.05em; color: var(--ink2); }
+
+  /* ---------- The floating window (the only thing with a shadow) ---------- */
+  .window { flex: 1; min-height: 0; width: 100%; max-width: 1280px; margin: 0 auto; display: grid;
+            grid-template-columns: minmax(340px, 36%) 1fr; background: var(--window); border-radius: var(--r);
+            box-shadow: var(--shadow); overflow: hidden; }
+
+  /* Translucent chrome: invisible at the top edge, frosted once content scrolls beneath. One per pane. */
+  .chrome { position: sticky; top: 0; z-index: 2; background: transparent;
+            transition: background-color .25s var(--ease), box-shadow .25s var(--ease); }
+  .scrolled > .chrome { background: var(--chrome); box-shadow: 0 0.5px 0 var(--hair);
+                        backdrop-filter: var(--chrome-filter); -webkit-backdrop-filter: var(--chrome-filter); }
+  @media (prefers-reduced-transparency: reduce) {
+    .scrolled > .chrome { background: var(--window); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  }
+
+  /* ---------- Mailbox (left) ---------- */
+  .mailbox { overflow-y: auto; box-shadow: 0.5px 0 0 var(--hair); scroll-padding-top: var(--header-h, 220px);
+            scroll-snap-type: y mandatory; }          /* rows always come to rest fully below the header */
+  .item, .section { scroll-snap-align: start; }
+  .mailbox .chrome { padding: var(--s6) var(--s5) var(--s3); }
+  h1 { margin: 0; font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -0.03em; }
+  .status { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2); }
+  .status .dot { width: 6px; height: 6px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink3);
+                 transition: background-color .3s var(--ease), box-shadow .3s var(--ease); }
+  .status.active .dot { background: var(--ink); box-shadow: none; }
+  .search { display: flex; align-items: center; gap: var(--s2); height: 36px; margin-top: var(--s4); padding: 0 var(--s3);
+            border-radius: var(--r); background: var(--fill); color: var(--ink3); }
+  .search svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; color: var(--ink); }
+  .search input::placeholder { color: var(--ink2); }
+  .search input::-webkit-search-cancel-button { display: none; }
+  .key { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 var(--s1);
+         border-radius: 4px; box-shadow: inset 0 0 0 1px var(--hair); font-family: var(--mono); font-size: 11px; color: var(--ink2); }
+  .tabs { display: flex; gap: var(--s5); margin-top: var(--s4); }
+  .tab { display: inline-flex; align-items: baseline; gap: var(--s2); padding-bottom: var(--s1);
+         font-size: 14px; font-weight: 500; color: var(--ink2); transition: color .2s var(--ease); }
+  .tab.active { color: var(--ink); }
+  .tab .mono { color: inherit; }
+  .tab[hidden] { display: none; }
+
+  .section { padding: var(--s5) var(--s5) var(--s2); }
+  .item { position: relative; display: block; width: calc(100% - var(--s4)); margin: 0 var(--s2); padding: 0 var(--s4);
+          text-align: left; border-radius: var(--r); transition: background-color .2s var(--ease); }
   .item.selected { background: var(--select); }
-  .row { display: flex; justify-content: space-between; gap: 10px; }
-  .from { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .time { color: var(--muted); font-size: 13px; flex-shrink: 0; }
-  .subject { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pill { display: inline-block; margin-top: 4px; font-size: 12px; padding: 1px 8px; border-radius: 999px;
-          background: var(--warn-bg); color: var(--warn-text); }
-  #reader { overflow-y: auto; padding: 28px 36px; }
-  #reader h2 { margin: 0 0 6px; font-size: 21px; }
-  .meta { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
-  .banner { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-line);
-            border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; animation: appear .4s ease-out; }
-  .banner strong { display: block; margin-bottom: 2px; }
-  @keyframes appear { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-  .body { white-space: pre-wrap; background: var(--panel); border: 1px solid var(--line);
-          border-radius: 10px; padding: 18px 20px; }
-  .link { color: var(--accent); text-decoration: underline; cursor: not-allowed; }
-  .link.blocked { color: var(--block-text); text-decoration: line-through; background: var(--block-bg);
-                  border-radius: 4px; padding: 0 4px; }
-  .link.blocked::after { content: " blocked by PHD1"; text-decoration: none; display: inline-block;
-                         font-size: 12px; margin-left: 4px; }
-  .error { background: var(--block-bg); color: var(--block-text); padding: 8px 20px; font-size: 13px; }
-  .empty { color: var(--muted); padding: 40px; }
+  .item .unread { position: absolute; left: 3px; top: 26px; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+  .content { padding: var(--s4) 0 18px; box-shadow: 0 0.5px 0 var(--hair); }
+  .item.last .content, .item.selected .content, .item.before-selected .content { box-shadow: none; }
+  .row { display: flex; align-items: baseline; gap: var(--s3); }
+  .from { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item.read .from { font-weight: 500; }
+  .meta-right { display: inline-flex; align-items: center; gap: var(--s2); flex-shrink: 0; }
+  .chev { width: 6px; height: 10px; color: var(--ink3); }
+  .subject { margin-top: 2px; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .preview { margin-top: 2px; font-size: 13px; color: var(--ink2); line-height: 1.45; min-height: 2.9em;
+             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .sus { width: 12px; height: 12px; color: var(--orange); flex-shrink: 0; align-self: center; }
+  .nothing { padding: var(--s7) var(--s5); text-align: center; }
+
+  /* ---------- Message (right) ---------- */
+  .reader { overflow-y: auto; }
+  .reader .chrome { display: flex; justify-content: flex-end; gap: var(--s1); padding: var(--s3) var(--s4); }
+  .tool { position: relative; width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--r);
+          color: var(--ink2); transition: background-color .2s var(--ease), color .2s var(--ease); }
+  .tool:hover { background: var(--fill); color: var(--ink); }
+  .tool svg { width: 18px; height: 18px; }
+  .tool::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; white-space: nowrap;
+                 padding: var(--s1) var(--s2); border-radius: var(--r); background: var(--toast-bg); color: var(--toast-ink);
+                 font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+                 opacity: 0; pointer-events: none; transform: translateY(-2px); transition: opacity .15s var(--ease), transform .15s var(--ease); }
+  .tool:hover::after, .tool:focus-visible::after { opacity: 1; transform: none; }
+  .message { max-width: 680px; margin: 0 auto; padding: var(--s4) var(--s6) var(--s7); }
+  .head .row { align-items: baseline; }
+  .head .name { flex: 1; font-size: 17px; font-weight: 600; letter-spacing: -0.015em; }
+  .head .lines { margin-top: var(--s1); display: grid; gap: 2px; }
+  .message h2 { margin: var(--s5) 0 0; padding-top: var(--s5); box-shadow: 0 -0.5px 0 var(--hair);
+                font-size: 28px; font-weight: 700; line-height: 1.2; letter-spacing: -0.025em; }
+  .warning { margin-top: var(--s5); padding-bottom: var(--s5); box-shadow: 0 0.5px 0 var(--hair);
+             transition: opacity .38s var(--ease), transform .38s var(--ease); }
+  .warning.enter { opacity: 0; transform: translateY(-6px); }
+  .warning .label { display: inline-flex; align-items: center; gap: 6px; }
+  .warning .label svg { width: 12px; height: 12px; color: var(--orange); }
+  .warning p { margin: var(--s2) 0 0; font-size: 16px; line-height: 1.55; }
+  .body { margin-top: var(--s5); white-space: pre-wrap; font-size: 16px; line-height: 1.65; letter-spacing: -0.005em; }
+  .link { color: var(--ink); text-decoration: underline; text-decoration-color: var(--ink3); text-underline-offset: 3px; cursor: not-allowed; }
+  .link.blocked { color: var(--ink2); text-decoration: none; }
+  .chip { display: inline-flex; align-items: center; gap: var(--s1); margin-left: 6px; height: 18px; padding: 0 6px;
+          border-radius: 4px; box-shadow: inset 0 0 0 1px var(--hair); vertical-align: 2px; }
+  .chip svg { width: 9px; height: 9px; }
+  .why { display: block; margin-top: var(--s2); white-space: normal; font-size: 13px; line-height: 1.45; color: var(--ink2); }
+  .why[hidden] { display: none; }
+  .placeholder { height: calc(100% - 60px); display: grid; place-items: center; }
+
+  /* ---------- Demo panel (outside the product UI) ---------- */
+  .demo { width: 100%; max-width: 1280px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s5); padding: 0 var(--s1); }
+  .demo .flag { display: inline-flex; gap: var(--s2); }
+  .demo .val { color: var(--ink2); transition: color .4s var(--ease); }
+  .demo .val.on { color: var(--ink); font-weight: 600; }
+  .demo .val.changed { color: var(--orange-ink); transition-duration: 0s; }
+  .demo .spacer { flex: 1; }
+
+  .toast { position: fixed; left: 50%; bottom: 72px; transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
+           padding: var(--s2) var(--s4); border-radius: var(--r); background: var(--toast-bg); color: var(--toast-ink); font-size: 13px;
+           transition: opacity .3s var(--ease), transform .3s var(--ease); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; }
+    .warning.enter { opacity: 1; transform: none; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>Inbox</h1>
-  <span class="who">pauline@example.ph</span>
-  <div class="status">
-    <span id="chip-banner" class="chip">Warning banners: off</span>
-    <span id="chip-links" class="chip">External links: allowed</span>
-    <span id="checked" class="checked"></span>
-  </div>
-</header>
-<div id="error" class="error" hidden></div>
-<main>
-  <div id="list"></div>
-  <div id="reader"><p class="empty">Select an email.</p></div>
-</main>
+<div class="window">
+  <section class="mailbox" id="mailbox">
+    <div class="chrome">
+      <h1>Inbox</h1>
+      <div class="status mono" id="status"><span class="dot"></span>PROTECTED BY PHD1</div>
+      <label class="search">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>
+        <input id="search" type="search" placeholder="Search" autocomplete="off" aria-label="Search mail">
+        <span class="key" aria-hidden="true">/</span>
+      </label>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="all" role="tab" aria-selected="true">All</button>
+        <button class="tab" data-tab="suspicious" id="tab-suspicious" role="tab" hidden>Suspicious <span class="mono" id="count"></span></button>
+      </div>
+    </div>
+    <div id="list"></div>
+  </section>
+
+  <section class="reader" id="reader">
+    <div class="chrome">
+      <button class="tool" data-tip="Flag" aria-label="Flag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg></button>
+      <button class="tool" data-tip="Move" aria-label="Move to folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></button>
+      <button class="tool" data-tip="Delete" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/></svg></button>
+      <button class="tool" data-tip="Reply" aria-label="Reply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6 4 12l6 6M4 12h10a6 6 0 0 1 6 6"/></svg></button>
+      <button class="tool" data-tip="New message" aria-label="New message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="m17.5 3.5 3 3L12 15l-4 1 1-4 8.5-8.5Z"/></svg></button>
+    </div>
+    <div id="message"><div class="placeholder mono">NO MESSAGE SELECTED</div></div>
+  </section>
+</div>
+
+<!-- Demo panel: shows the raw Flagsmith state for the demo, kept out of the product UI. -->
+<div class="demo mono" id="demo">
+  <span>DEMO · FLAGSMITH · DEVELOPMENT</span>
+  <span class="flag">phishing_warning_banner <span class="val" id="val-banner">OFF</span></span>
+  <span class="flag">block_external_links <span class="val" id="val-links">OFF</span></span>
+  <span class="spacer"></span>
+  <span id="updated"></span>
+</div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
 // Email text comes from attackers, so it is only ever inserted as plain text
 // (textContent), never as HTML. Links are shown, but never opened.
-let state = null;
-let selectedId = null;
-let lastFlags = {};
+let state = null, stateKey = "", selectedId = null, lastFlags = null;
+let tab = "all", query = "", animateWarning = false;
+const read = new Set();        // ids the user has opened (on top of ones already read)
+const openWhy = new Set();     // which "blocked" reasons are expanded
+
+// Fixed icon markup (never email content).
+const ICONS = {
+  chev: '<svg viewBox="0 0 6 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m1 1 4 4-4 4"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.3 3.6a2 2 0 0 1 3.4 0l8.2 14.2A2 2 0 0 1 20.2 21H3.8a2 2 0 0 1-1.7-3.2L10.3 3.6ZM12 8.5a1.1 1.1 0 0 0-1.1 1.2l.3 4.6a.8.8 0 0 0 1.6 0l.3-4.6A1.1 1.1 0 0 0 12 8.5Zm0 9.3a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z"/></svg>',
+  lock: '<svg viewBox="0 0 12 12" fill="currentColor"><path d="M3 5V3.5a3 3 0 0 1 6 0V5h.5A1.5 1.5 0 0 1 11 6.5v4A1.5 1.5 0 0 1 9.5 12h-7A1.5 1.5 0 0 1 1 10.5v-4A1.5 1.5 0 0 1 2.5 5H3Zm1.5 0h3V3.5a1.5 1.5 0 0 0-3 0V5Z"/></svg>',
+};
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -84,92 +219,204 @@ function el(tag, className, text) {
   if (text !== undefined) node.textContent = text;
   return node;
 }
+function icon(name, className) {
+  const holder = document.createElement("span");
+  holder.innerHTML = ICONS[name];
+  const svg = holder.firstChild;
+  if (className) svg.setAttribute("class", className);
+  return svg;
+}
+function toast(text) {
+  const t = document.getElementById("toast");
+  t.textContent = text;
+  t.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove("show"), 1800);
+}
 
-function bannerOn() { return state.flags.phishing_warning_banner; }
-function linksBlocked() { return state.flags.block_external_links; }
+const bannerOn = () => state.flags.phishing_warning_banner;
+const linksBlocked = () => state.flags.block_external_links;
+const suspicious = e => bannerOn() && e.in_wave;
+const isRead = e => e.read || read.has(e.id);
+const listTime = e => e.day === "Today" ? e.time : e.day;
 
+// ---------- Status + demo panel ----------
 function renderStatus() {
-  const banner = document.getElementById("chip-banner");
-  const links = document.getElementById("chip-links");
-  banner.textContent = "Warning banners: " + (bannerOn() ? "ON" : "off");
-  banner.classList.toggle("on-warn", bannerOn());
-  links.textContent = "External links: " + (linksBlocked() ? "BLOCKED" : "allowed");
-  links.classList.toggle("on-block", linksBlocked());
-  // Flash a chip when its flag just changed, so the moment is easy to see on video.
-  for (const [name, chip] of [["phishing_warning_banner", banner], ["block_external_links", links]]) {
-    if (name in lastFlags && lastFlags[name] !== state.flags[name]) {
-      chip.classList.remove("flash"); void chip.offsetWidth; chip.classList.add("flash");
+  document.getElementById("status").classList.toggle("active", bannerOn() || linksBlocked());
+  for (const [name, id] of [["phishing_warning_banner", "val-banner"], ["block_external_links", "val-links"]]) {
+    const v = document.getElementById(id);
+    v.textContent = state.flags[name] ? "ON" : "OFF";
+    v.classList.toggle("on", state.flags[name]);
+    if (lastFlags && lastFlags[name] !== state.flags[name]) {
+      v.classList.add("changed");           // flash, then fade back with a transition
+      requestAnimationFrame(() => requestAnimationFrame(() => v.classList.remove("changed")));
     }
   }
-  lastFlags = { ...state.flags };
-  document.getElementById("checked").textContent =
-    "checked " + new Date().toLocaleTimeString();
-  const error = document.getElementById("error");
-  error.hidden = !state.flags_error;
-  error.textContent = state.flags_error ? "Couldn't reach Flagsmith: " + state.flags_error : "";
+  document.getElementById("updated").textContent = "UPDATED " + new Date().toLocaleTimeString([], { hour12: false });
+
+  const count = state.emails.filter(suspicious).length;
+  document.getElementById("tab-suspicious").hidden = count === 0;
+  document.getElementById("count").textContent = count;
+  if (count === 0 && tab === "suspicious") setTab("all", false);
+}
+
+// ---------- List ----------
+function visibleEmails() {
+  const q = query.trim().toLowerCase();
+  return state.emails.filter(e =>
+    (tab === "all" || suspicious(e)) &&
+    (!q || [e.from_name, e.subject, e.body].some(t => t.toLowerCase().includes(q))));
 }
 
 function renderList() {
   const list = document.getElementById("list");
+  const emails = visibleEmails();
   list.replaceChildren();
-  for (const email of state.emails) {
-    const item = el("div", "item" + (email.id === selectedId ? " selected" : ""));
+  if (!emails.length) { list.append(el("div", "nothing mono", "NO MESSAGES")); return; }
+
+  let section = null;
+  emails.forEach((email, i) => {
+    const group = email.day === "Today" ? "TODAY" : "EARLIER";
+    if (group !== section) { section = group; list.append(el("div", "section mono", group)); }
+    const next = emails[i + 1];
+    const lastInGroup = !next || (next.day === "Today") !== (email.day === "Today");
+
+    const item = el("button", "item" + (isRead(email) ? " read" : "") + (lastInGroup ? " last" : ""));
+    item.dataset.id = email.id;
+    if (!isRead(email)) item.append(el("span", "unread"));
+    const content = el("div", "content");
     const top = el("div", "row");
-    top.append(el("span", "from", email.from_name), el("span", "time", email.time));
-    item.append(top, el("div", "subject", email.subject));
-    if (bannerOn() && email.in_wave) item.append(el("span", "pill", "Suspicious"));
-    item.onclick = () => { selectedId = email.id; render(); };
+    const right = el("span", "meta-right");
+    if (suspicious(email)) {
+      const sus = icon("warn", "sus");
+      sus.setAttribute("role", "img"); sus.setAttribute("aria-label", "Suspicious");
+      right.append(sus);
+    }
+    right.append(el("span", "mono", listTime(email)), icon("chev", "chev"));
+    top.append(el("span", "from", email.from_name), right);
+    content.append(top, el("div", "subject", email.subject), el("div", "preview", email.body));
+    item.append(content);
+    item.onclick = () => select(email.id);
     list.append(item);
-  }
+  });
+  markSelection();
 }
 
+function markSelection() {
+  const items = [...document.querySelectorAll(".item")];
+  items.forEach((item, i) => {
+    const sel = item.dataset.id === selectedId;
+    item.classList.toggle("selected", sel);
+    item.classList.toggle("before-selected", !!items[i + 1] && items[i + 1].dataset.id === selectedId);
+  });
+}
+
+function select(id) {
+  selectedId = id;
+  read.add(id);
+  const item = document.querySelector(`.item[data-id="${id}"]`);
+  if (item) { item.classList.add("read"); item.querySelector(".unread")?.remove(); }
+  markSelection();                       // in place: scroll position and focus stay put
+  item?.scrollIntoView({ block: "nearest" });   // never leaves the row half under the header
+  animateWarning = false;
+  renderReader();
+  document.getElementById("reader").scrollTop = 0;
+}
+
+// ---------- Message ----------
 function bodyWithLinks(email) {
-  // Split the body around each link and rebuild it from text nodes and spans.
   const body = el("div", "body");
   let rest = email.body;
-  for (const url of email.links) {
+  email.links.forEach((url, i) => {
     const at = rest.indexOf(url);
-    if (at === -1) continue;
+    if (at === -1) return;
     body.append(document.createTextNode(rest.slice(0, at)));
-    const link = el("span", "link" + (linksBlocked() ? " blocked" : ""), url);
-    link.title = linksBlocked() ? "Blocked by PHD1" : "Demo inbox: links are never opened";
-    body.append(link);
+    body.append(el("span", "link" + (linksBlocked() ? " blocked" : ""), url));
+    if (linksBlocked()) {
+      const key = email.id + ":" + i;
+      const chip = el("button", "chip mono");
+      chip.setAttribute("aria-label", "Why is this link blocked?");
+      chip.append(icon("lock"), document.createTextNode("BLOCKED"));
+      const why = el("span", "why", "All links are paused while PHD1's link block is on.");
+      why.hidden = !openWhy.has(key);
+      chip.onclick = () => { why.hidden = !why.hidden; why.hidden ? openWhy.delete(key) : openWhy.add(key); };
+      body.append(chip, why);
+    }
     rest = rest.slice(at + url.length);
-  }
+  });
   body.append(document.createTextNode(rest));
   return body;
 }
 
 function renderReader() {
-  const reader = document.getElementById("reader");
+  const holder = document.getElementById("message");
   const email = state.emails.find(e => e.id === selectedId);
-  if (!email) { reader.replaceChildren(el("p", "empty", "Select an email.")); return; }
-  const parts = [el("h2", "", email.subject),
-                 el("div", "meta", `${email.from_name} <${email.from_address}> · ${email.time}`)];
-  if (bannerOn() && email.in_wave) {
-    const banner = el("div", "banner");
-    banner.append(el("strong", "", "Warning from PHD1: this looks like phishing"));
-    banner.append(document.createTextNode(
-      `This email pretends to be ${state.brand} but is not, and it is part of a phishing wave. ` +
-      "Don't click its links or share your details. Open your bank's app directly instead."));
-    parts.push(banner);
+  if (!email) { holder.replaceChildren(el("div", "placeholder mono", "NO MESSAGE SELECTED")); return; }
+
+  const message = el("article", "message");
+  const head = el("header", "head");
+  const top = el("div", "row");
+  top.append(el("div", "name", email.from_name),
+             el("span", "mono", `${email.day.toUpperCase()} ${email.time}`));
+  const lines = el("div", "lines");
+  lines.append(el("span", "mono", email.from_address), el("span", "mono", "TO PAULINE"));
+  head.append(top, lines);
+  message.append(head, el("h2", "", email.subject));
+
+  if (suspicious(email)) {
+    const warning = el("section", "warning" + (animateWarning ? " enter" : ""));
+    const label = el("div", "label mono");
+    label.append(icon("warn"), document.createTextNode("PHISHING WARNING"));
+    warning.append(label, el("p", "",
+      `This email pretends to be ${state.brand} but isn't. Don't tap its links or share your details; open your bank's app directly instead.`));
+    message.append(warning);
+    if (animateWarning) requestAnimationFrame(() => requestAnimationFrame(() => warning.classList.remove("enter")));
   }
-  parts.push(bodyWithLinks(email));
-  reader.replaceChildren(...parts);
+  message.append(bodyWithLinks(email));
+  holder.replaceChildren(message);
 }
 
-function render() { renderStatus(); renderList(); renderReader(); }
+// ---------- Wiring ----------
+function setTab(name, rerender = true) {
+  tab = name;
+  document.querySelectorAll(".tab").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === name);
+    b.setAttribute("aria-selected", b.dataset.tab === name);
+  });
+  if (rerender && state) renderList();
+}
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+const search = document.getElementById("search");
+search.oninput = () => { query = search.value; if (state) renderList(); };
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement !== search) { e.preventDefault(); search.focus(); }
+  if (e.key === "Escape" && document.activeElement === search) { search.value = ""; query = ""; search.blur(); renderList(); }
+});
+document.querySelectorAll(".tool").forEach(b => b.onclick = () => toast(`${b.dataset.tip} isn't available in this demo inbox`));
+const mailHeader = document.querySelector(".mailbox .chrome");
+new ResizeObserver(() => document.getElementById("mailbox").style.setProperty("--header-h", mailHeader.offsetHeight + "px")).observe(mailHeader);
+for (const id of ["mailbox", "reader"]) {
+  const pane = document.getElementById(id);
+  pane.addEventListener("scroll", () => pane.classList.toggle("scrolled", pane.scrollTop > 4), { passive: true });
+}
 
 async function refresh() {
   try {
     const response = await fetch("/api/state", { cache: "no-store" });
-    state = await response.json();
-    if (!selectedId && state.emails.length) selectedId = state.emails[0].id;
-    render();
+    const next = await response.json();
+    const key = JSON.stringify(next);
+    if (key === stateKey) {                     // nothing changed: leave the page alone
+      document.getElementById("updated").textContent = "UPDATED " + new Date().toLocaleTimeString([], { hour12: false });
+      return;
+    }
+    animateWarning = !!(lastFlags && !lastFlags.phishing_warning_banner && next.flags.phishing_warning_banner);
+    state = next; stateKey = key;
+    if (!selectedId && state.emails.length) { selectedId = state.emails[0].id; read.add(selectedId); }
+    renderStatus(); renderList(); renderReader();
+    lastFlags = { ...state.flags };
+    if (state.flags_error) toast("Couldn't reach Flagsmith");
   } catch (e) {
-    const error = document.getElementById("error");
-    error.hidden = false;
-    error.textContent = "Inbox server not reachable. Is python inbox.py still running?";
+    toast("Inbox server not reachable. Is python inbox.py still running?");
   }
 }
 

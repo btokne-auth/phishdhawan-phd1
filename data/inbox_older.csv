@@ -1,0 +1,6 @@
+id,day,time,read,from_name,from_address,subject,body
+O01,Yesterday,19:42,no,Kuya Migs,migs.estira.family@gmail.com,Laro mamaya?,"Laro tayo bukas, 5 PM sa court. G?"
+O02,Yesterday,16:05,yes,ParcelGo,updates@parcelgo.com,Delivered: PG-80211,"Your parcel PG-80211 was delivered and received by Pauline. Rate your rider in the ParcelGo app."
+O03,Yesterday,08:30,yes,SRTC Library,library@srtc.edu.ph,Reminder: 1 book due in 3 days,"Hi Pauline! A friendly reminder that ""Computer Networking: A Top-Down Approach"" is due on Saturday. You can renew it once from the student portal, or return it at the front desk. Late returns are charged 5 PHP per day."
+O04,Mon,11:15,yes,Lumen Bank,advisory@lumenbank.ph,We will never ask for your OTP,"A reminder from Lumen Bank: we will never ask for your password, OTP or card details by email, text or call. If someone does, report it in the Lumen Bank app."
+O05,Sun,20:10,yes,Ate Joy,joy.estira.family@gmail.com,Sunday lunch,"Sige, I'll bring the pancit! See you at Lola's."

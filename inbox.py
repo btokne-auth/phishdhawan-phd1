@@ -19,8 +19,27 @@ from tools import extract_urls
 from wave import find_waves, load_csv
 
 EMAILS_PATH = "data/inbox_today.csv"
+OLDER_PATH = "data/inbox_older.csv"     # display only: older mail, already triaged
 RESULTS_PATH = "results_today.csv"
 HOST, PORT = "127.0.0.1", 8000   # only reachable from this laptop
+
+# Display realism only: today's emails the user has already opened.
+ALREADY_READ = {"T01", "T03", "T07", "T11"}
+
+
+def to_view(e, day, time_, read, in_wave):
+    return {
+        "id": e["id"],
+        "day": day,
+        "time": time_,
+        "from_name": e["from_name"],
+        "from_address": e["from_address"],
+        "subject": e["subject"],
+        "body": e["body"],
+        "links": extract_urls(e["body"]),
+        "read": read,
+        "in_wave": in_wave,
+    }
 
 
 def build_state():
@@ -36,21 +55,14 @@ def build_state():
     except Exception as e:                       # Flagsmith unreachable, bad key...
         flags, flags_error = {FLAG_BANNER: False, FLAG_BLOCK_LINKS: False}, str(e)
 
-    return {
-        "flags": flags,
-        "flags_error": flags_error,
-        "brand": brand,
-        "emails": [{
-            "id": e["id"],
-            "time": e["received_at"],
-            "from_name": e["from_name"],
-            "from_address": e["from_address"],
-            "subject": e["subject"],
-            "body": e["body"],
-            "links": extract_urls(e["body"]),
-            "in_wave": e["id"] in wave_ids,
-        } for e in reversed(emails)],            # newest first, like a real inbox
-    }
+    today = [to_view(e, "Today", e["received_at"], e["id"] in ALREADY_READ, e["id"] in wave_ids)
+             for e in reversed(emails)]          # newest first, like a real inbox
+    try:
+        older = [to_view(e, e["day"], e["time"], e["read"] == "yes", False) for e in load_csv(OLDER_PATH)]
+    except FileNotFoundError:
+        older = []
+
+    return {"flags": flags, "flags_error": flags_error, "brand": brand, "emails": today + older}
 
 
 class Handler(BaseHTTPRequestHandler):
