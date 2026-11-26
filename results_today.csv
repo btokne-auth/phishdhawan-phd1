@@ -1,0 +1,17 @@
+id,verdict,confidence,reason,risky_links,overridden
+T01,safe,0.95,Legitimate bank statement notification with no suspicious links or requests,,False
+T02,safe,0.95,Legitimate shipping notification with matching sender and domain,,False
+T03,safe,0.9,Generic enrollment reminder with no suspicious links or mismatches,,False
+T04,phishing,0.98,Lookalike domain and sender mismatch used to lure victim to claim money via malicious link,http://lumenbank-cares.com/claim,False
+T05,phishing,0.99,"Lookalike domain, sender mismatch, urgent request for personal/financial info",http://lumenbnk.ph/ayuda,False
+T06,phishing,0.99,"Lookalike domain, sender mismatch, urgent request for verification via link",http://lumen-bank-aid.com/verify,False
+T07,safe,0.97,"Personal, non‑malicious request with no links or suspicious content.",,False
+T08,phishing,0.99,"Lookalike domain, sender mismatch, urgent financial assistance claim link",http://lumenbank-cares.com/claim?ref=last,False
+T09,phishing,0.98,"Lookalike domain, sender mismatch, urgent request to click a malicious link",http://lumenbank-secure.net/cancel,False
+T10,phishing,0.99,"Lookalike domain, sender mismatch, urgent request for OTP via link",http://lumenbamk.ph/dispute,False
+T11,safe,0.85,No malicious links or requests; appears to be a routine transaction notification.,,False
+T12,phishing,0.99,"Lookalike domain, sender mismatch, and urgent request to click a verification link",http://lumenbank-verify.com/device,False
+T13,phishing,0.99,Urgent request to update card details via a lookalike domain and sender mismatch,http://paywave-help.com/limit,False
+T14,phishing,0.99,Lookalike domain and urgent unlock link request,http://lumenbank-alerts.co/unlock,False
+T15,phishing,0.98,"Lookalike domain and sender mismatch with a link to a suspicious site, plus instructions to ignore warnings",http://lumenbank-testcenter.com/verify,False
+T16,spam,0.96,"Unsolicited marketing email with promotional link, no credential request.",https://megadeals-shop.com/payday,False
