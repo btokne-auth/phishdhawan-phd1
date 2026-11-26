@@ -6,9 +6,12 @@ stronger key: an Organisation API key, kept in .env and never committed.
 
 Check the setup without changing anything:
     python flag_admin.py
+Put both flags back OFF before a demo re-take (a human runs this, not PHD1):
+    python flag_admin.py --reset-demo
 """
 
 import os
+import sys
 
 import requests
 from dotenv import load_dotenv
@@ -47,6 +50,10 @@ def find_feature_state(session, environment_id, flag_name):
 
 def switch_on(flag_name):
     """Switch one flag ON in the environment. Returns True if Flagsmith confirms it."""
+    return _set_enabled(flag_name, True)
+
+
+def _set_enabled(flag_name, enabled):
     session, environment_id = _connect()
     state = find_feature_state(session, environment_id, flag_name)
     feature = state["feature"]
@@ -56,16 +63,26 @@ def switch_on(flag_name):
     # also records each change as a new version.
     response = session.patch(
         f"{FUTURE_API_URL}/environments/{environment_id}/features/{feature_id}/",
-        json={"environment_default": {"enabled": True}}, timeout=15,
+        json={"environment_default": {"enabled": enabled}}, timeout=15,
     )
     if not response.ok:
         raise RuntimeError(f"Flagsmith said {response.status_code}: {response.text[:200]}")
-    return response.json().get("environment_default", {}).get("enabled") is True
+    return response.json().get("environment_default", {}).get("enabled") is enabled
 
 
 if __name__ == "__main__":
-    # Read-only check: finds each flag, changes nothing.
     from flags import FLAG_BANNER, FLAG_BLOCK_LINKS
+
+    if "--reset-demo" in sys.argv:
+        # For demo re-takes only: a HUMAN runs this to put both flags back OFF.
+        # PHD1 itself never switches flags off (respond.py only calls switch_on).
+        for name in (FLAG_BANNER, FLAG_BLOCK_LINKS):
+            _set_enabled(name, False)
+            print(f"{name}: switched OFF")
+        print("Demo reset: both flags are OFF.")
+        sys.exit(0)
+
+    # Read-only check: finds each flag, changes nothing.
     session, environment_id = _connect()
     for name in (FLAG_BANNER, FLAG_BLOCK_LINKS):
         state = find_feature_state(session, environment_id, name)

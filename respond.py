@@ -12,8 +12,10 @@ Run it:  python respond.py
 """
 
 import json
+import os
 import sys
 import time
+from datetime import datetime
 
 from pydantic import BaseModel, ValidationError
 
@@ -151,6 +153,56 @@ def apply(flag):
     return False
 
 
+# --- Step 4: the incident log ---------------------------------------------------
+APPROVER = os.getenv("APPROVER_NAME", "human reviewer")
+
+
+class IncidentLog:
+    """Records what PHD1 saw, what it did alone, what it asked, and who decided."""
+
+    def __init__(self, wave, summary, llm_error):
+        self.wave, self.summary, self.llm_error = wave, summary, llm_error
+        self.started = datetime.now()
+        self.entries = []
+
+    def add(self, actor, action, result, reason):
+        clean = lambda text: str(text).replace("|", "/").replace("\n", " ")  # keep the table intact
+        self.entries.append((datetime.now().strftime("%H:%M:%S"), clean(actor),
+                             clean(action), clean(result), clean(reason)))
+
+    def save(self, first_action_seconds):
+        os.makedirs("incidents", exist_ok=True)
+        path = f"incidents/incident-{self.started:%Y%m%d-%H%M%S}.md"
+        w = self.wave
+        lines = [
+            f"# Incident: phishing wave imitating {w['brand']}",
+            "",
+            f"- **Logged:** {self.started:%Y-%m-%d %H:%M:%S}",
+            f"- **Wave:** {w['count']} phishing emails between {w['first']} and {w['last']}",
+            f"- **Fake domains:** {', '.join(w['fake_domains'])}",
+            f"- **Model:** {MODEL}" + (f" (failed, safe fallback used: {self.llm_error})"
+                                         if self.llm_error else ""),
+            "- **First protection:** " + (f"{first_action_seconds:.1f}s after the wave was found"
+                                          if first_action_seconds is not None else "none applied"),
+            "",
+            "## PHD1's assessment",
+            "",
+            self.summary,
+            "",
+            "## Lures seen",
+            "",
+        ]
+        lines += [f"- {t} `{eid}` {subject}" for t, eid, subject in w["lures"]]
+        lines += ["", "## Actions", "",
+                  "| Time | Who | Action | Result | Reason |",
+                  "| --- | --- | --- | --- | --- |"]
+        lines += [f"| {t} | {who} | {action} | {result} | {reason} |"
+                  for t, who, action, result, reason in self.entries]
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        return path
+
+
 def main(emails_path="data/inbox_today.csv", results_path="results_today.csv"):
     waves, _ = find_waves(load_csv(emails_path), load_csv(results_path))
     if not waves:
@@ -169,24 +221,37 @@ def main(emails_path="data/inbox_today.csv", results_path="results_today.csv"):
 
     steps = decide(plan, read_flags())
     first_action_seconds = None
+    log = IncidentLog(wave, plan.summary, error)
     print("\nResponse:")
     for step in steps:
+        flag = step["flag"]
         if step["mode"] == "auto":
-            if apply(step["flag"]):
+            if apply(flag):
                 if first_action_seconds is None:
                     first_action_seconds = time.perf_counter() - started
-                print(f"  DID ALONE (low risk): {step['flag']} - {step['why']}")
-        elif step["mode"] == "ask":
-            if ask_human(step):
-                if apply(step["flag"]):
-                    print(f"  APPROVED by human: {step['flag']}")
+                print(f"  DID ALONE (low risk): {flag} - {step['why']}")
+                log.add("PHD1", f"switched ON {flag}", "low risk, did it alone", step["why"])
             else:
-                print(f"  DECLINED by human: {step['flag']} stays OFF")
+                log.add("PHD1", f"tried to switch ON {flag}", "FAILED", step["why"])
+        elif step["mode"] == "ask":
+            log.add("PHD1", f"asked to switch ON {flag}", "high risk, waiting for a human", step["why"])
+            if ask_human(step):
+                if apply(flag):
+                    print(f"  APPROVED by human: {flag}")
+                    log.add(APPROVER, f"approved {flag}", "switched ON", "")
+                else:
+                    log.add(APPROVER, f"approved {flag}", "FAILED to switch ON", "")
+            else:
+                print(f"  DECLINED by human: {flag} stays OFF")
+                log.add(APPROVER, f"declined {flag}", "stays OFF", "")
         else:
-            print(f"  {step['mode'].upper()}: {step['flag']} ({step['note']})")
+            print(f"  {step['mode'].upper()}: {flag} ({step['note']})")
+            log.add("code", f"{step['mode']} {flag}", step["note"], step["why"])
 
     if first_action_seconds is not None:
         print(f"\nFirst protection applied {first_action_seconds:.1f}s after the wave was found.")
+    path = log.save(first_action_seconds)
+    print(f"Incident log saved: {path}")
 
 
 if __name__ == "__main__":
