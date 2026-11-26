@@ -23,8 +23,9 @@
     --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
     --ease: cubic-bezier(0.2, 0.9, 0.25, 1);   /* critically damped feel: no overshoot */
   }
+  /* Dark tokens: used when the system is dark (theme Auto) or when Dark is chosen in the demo panel. */
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --canvas: #050505; --window: #121212; --chrome: rgba(18, 18, 18, 0.88); --chrome-filter: blur(30px);
       --ink: #f2f2f2; --ink2: #a3a3a3; --ink3: #737373;
       --hair: rgba(255, 255, 255, 0.15); --select: #1c1c1c; --fill: rgba(255, 255, 255, 0.06);
@@ -33,11 +34,19 @@
       --toast-bg: #ffffff; --toast-ink: #000000;       /* inverted so it stays visible on a dark canvas */
     }
   }
+  :root[data-theme="dark"] {
+      --canvas: #050505; --window: #121212; --chrome: rgba(18, 18, 18, 0.88); --chrome-filter: blur(30px);
+      --ink: #f2f2f2; --ink2: #a3a3a3; --ink3: #737373;
+      --hair: rgba(255, 255, 255, 0.15); --select: #1c1c1c; --fill: rgba(255, 255, 255, 0.06);
+      --blue: #0a84ff; --orange: #ff9f0a; --orange-ink: #ffb340;
+      --shadow: 0 32px 80px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.3);
+      --toast-bg: #ffffff; --toast-ink: #000000;       /* inverted so it stays visible on a dark canvas */
+  }
   @media (prefers-contrast: more) {
     :root { --ink2: #3d3d3d; --ink3: #6b6b6b; --hair: rgba(0, 0, 0, 0.22); }
   }
   @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
-    :root { --ink2: #cfcfcf; --ink3: #9a9a9a; --hair: rgba(255, 255, 255, 0.28); }
+    :root:not([data-theme="light"]) { --ink2: #cfcfcf; --ink3: #9a9a9a; --hair: rgba(255, 255, 255, 0.28); }
   }
 
   * { box-sizing: border-box; }
@@ -60,6 +69,10 @@
   @media (prefers-reduced-transparency: reduce) {
     .scrolled > .chrome { background: var(--window); backdrop-filter: none; -webkit-backdrop-filter: none; }
   }
+
+  .mailbox, .reader { scrollbar-width: thin; scrollbar-color: var(--hair) transparent; }
+  .mailbox::-webkit-scrollbar, .reader::-webkit-scrollbar { width: 8px; }
+  .mailbox::-webkit-scrollbar-thumb, .reader::-webkit-scrollbar-thumb { background: var(--hair); border-radius: var(--r); }
 
   /* ---------- Mailbox (left) ---------- */
   .mailbox { overflow-y: auto; box-shadow: 0.5px 0 0 var(--hair); scroll-padding-top: var(--header-h, 220px);
@@ -145,6 +158,10 @@
   .demo .val.on { color: var(--ink); font-weight: 600; }
   .demo .val.changed { color: var(--orange-ink); transition-duration: 0s; }
   .demo .spacer { flex: 1; }
+  .demo .theme { font: inherit; color: var(--ink2); letter-spacing: inherit; padding: var(--s1) var(--s2); border-radius: var(--r);
+                 transition: background-color .2s var(--ease), color .2s var(--ease); }
+  .demo .theme:hover { background: var(--fill); color: var(--ink); }
+  .demo .theme b { color: var(--ink); font-weight: 600; }
 
   .toast { position: fixed; left: 50%; bottom: 72px; transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
            padding: var(--s2) var(--s4); border-radius: var(--r); background: var(--toast-bg); color: var(--toast-ink); font-size: 13px;
@@ -194,6 +211,7 @@
   <span class="flag">phishing_warning_banner <span class="val" id="val-banner">OFF</span></span>
   <span class="flag">block_external_links <span class="val" id="val-links">OFF</span></span>
   <span class="spacer"></span>
+  <button class="theme" id="theme" aria-label="Switch theme">THEME <b id="theme-name">AUTO</b></button>
   <span id="updated"></span>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -419,6 +437,23 @@ async function refresh() {
     toast("Inbox server not reachable. Is python inbox.py still running?");
   }
 }
+
+// Theme switch (demo panel): Auto follows the system; Light/Dark override it.
+const THEMES = ["auto", "light", "dark"];
+function applyTheme(name) {
+  const root = document.documentElement;
+  if (name === "auto") { root.removeAttribute("data-theme"); root.style.colorScheme = ""; }
+  else { root.setAttribute("data-theme", name); root.style.colorScheme = name; }
+  document.getElementById("theme-name").textContent = name.toUpperCase();
+  try { localStorage.setItem("phd1-theme", name); } catch (e) { /* storage unavailable: still works for this visit */ }
+}
+let theme = "auto";
+try { theme = localStorage.getItem("phd1-theme") || "auto"; } catch (e) {}
+applyTheme(THEMES.includes(theme) ? theme : "auto");
+document.getElementById("theme").onclick = () => {
+  theme = THEMES[(THEMES.indexOf(document.getElementById("theme-name").textContent.toLowerCase()) + 1) % THEMES.length];
+  applyTheme(theme);
+};
 
 refresh();
 setInterval(refresh, 3000);   // check the flags every 3 seconds
