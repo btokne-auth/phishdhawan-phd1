@@ -1,14 +1,19 @@
 """
 eval.py - how well did the agent do? Compares results.csv to data/labels.csv.
 Run it:  python eval.py
+   or:   python eval.py data/inbox_today_labels.csv results_today.csv
 """
 
 import csv
+import sys
 from collections import Counter
 
-with open("data/labels.csv", newline="", encoding="utf-8") as f:
+labels_path = sys.argv[1] if len(sys.argv) > 1 else "data/labels.csv"
+results_path = sys.argv[2] if len(sys.argv) > 2 else "results.csv"
+
+with open(labels_path, newline="", encoding="utf-8") as f:
     labels = {row["id"]: row["label"] for row in csv.DictReader(f)}
-with open("results.csv", newline="", encoding="utf-8") as f:
+with open(results_path, newline="", encoding="utf-8") as f:
     results = {row["id"]: row for row in csv.DictReader(f)}
 
 correct = 0

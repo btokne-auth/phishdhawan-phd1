@@ -8,6 +8,7 @@ Run it:  python agent.py
 import csv
 import json
 import os
+import sys
 import time
 from typing import Literal
 
@@ -133,8 +134,8 @@ def triage(email):
             "overridden": overridden}
 
 
-def main():
-    with open("data/emails.csv", newline="", encoding="utf-8") as f:
+def main(emails_path="data/emails.csv", results_path="results.csv"):
+    with open(emails_path, newline="", encoding="utf-8") as f:
         emails = list(csv.DictReader(f))
 
     rows = []
@@ -145,12 +146,14 @@ def main():
         print(f"[{i}/{len(emails)}] {row['id']}: {row['verdict']}{flag}")
         time.sleep(SECONDS_BETWEEN_CALLS)
 
-    with open("results.csv", "w", newline="", encoding="utf-8") as f:
+    with open(results_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
         writer.writerows(rows)
-    print("Done. Wrote results.csv")
+    print(f"Done. Wrote {results_path}")
 
 
 if __name__ == "__main__":
-    main()
+    # python agent.py                                        -> rehearsal set
+    # python agent.py data/inbox_today.csv results_today.csv -> today's inbox
+    main(*sys.argv[1:3])
