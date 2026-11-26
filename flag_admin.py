@@ -15,7 +15,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_URL = "https://api.flagsmith.com/api/v1"
+API_URL = "https://api.flagsmith.com/api/v1"                # finding flags
+FUTURE_API_URL = "https://api.flagsmith.com/api/__future__"  # changing flags
 
 
 def _connect():
@@ -48,12 +49,18 @@ def switch_on(flag_name):
     """Switch one flag ON in the environment. Returns True if Flagsmith confirms it."""
     session, environment_id = _connect()
     state = find_feature_state(session, environment_id, flag_name)
+    feature = state["feature"]
+    feature_id = feature["id"] if isinstance(feature, dict) else feature
+    # The old /featurestates/ endpoint is refused (400) on environments with
+    # Feature Versioning on, so we use the newer flag-update endpoint, which
+    # also records each change as a new version.
     response = session.patch(
-        f"{API_URL}/environments/{environment_id}/featurestates/{state['id']}/",
-        json={"enabled": True}, timeout=15,
+        f"{FUTURE_API_URL}/environments/{environment_id}/features/{feature_id}/",
+        json={"environment_default": {"enabled": True}}, timeout=15,
     )
-    response.raise_for_status()
-    return response.json().get("enabled") is True
+    if not response.ok:
+        raise RuntimeError(f"Flagsmith said {response.status_code}: {response.text[:200]}")
+    return response.json().get("environment_default", {}).get("enabled") is True
 
 
 if __name__ == "__main__":
