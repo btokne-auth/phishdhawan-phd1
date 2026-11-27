@@ -154,4 +154,7 @@ phishdhawan-phd1/
 
 ## How it was built
 
-Built solo by Pauline Estira. The planning, scenario, design decisions and testing are mine; AI tools helped write the code.
+Built by team PHishDhawan:
+
+- **Pauline Estira**: planning, scenario, design decisions and testing.
+- **Neiko Sarandon**: tester (full fresh-setup runs) and co-writer of the demo storyline.
