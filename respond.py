@@ -18,21 +18,36 @@ import time
 from datetime import datetime
 
 from pydantic import BaseModel, ValidationError
+from rich import box
+from rich.console import Console
+from rich.markup import escape
+from rich.panel import Panel
+from rich.prompt import Confirm
+from rich.table import Table
+from rich.text import Text
+from rich.theme import Theme
 
 from agent import MODEL, client          # same LLM provider as the triage agent
 from flag_admin import switch_on
 from flags import FLAG_BANNER, FLAG_BLOCK_LINKS, read_flags
-from wave import find_waves, load_csv
+from wave import find_waves, load_csv, to_minutes
+
+# highlight=False: no automatic colours. Every colour on screen is chosen on purpose.
+console = Console(highlight=False, theme=Theme({"prompt.choices": "dim", "prompt.default": "dim"}))
 
 # --- The policy: CODE decides risk, never the LLM ----------------------------
 POLICY = {
     FLAG_BANNER: {
         "risk": "low",
+        "label": "Warning banners",
         "what": "Show a warning banner on emails that imitate the attacked brand",
+        "cost": "None. Emails still open normally.",
     },
     FLAG_BLOCK_LINKS: {
         "risk": "high",
-        "what": "Block external links in emails (stops clicks, but may break real emails)",
+        "label": "Block all links",
+        "what": "Block external links in every email",
+        "cost": "Real links (deliveries, shops, friends) also pause until someone switches it off.",
     },
 }
 
@@ -75,7 +90,8 @@ def wave_summary(wave):
 
 def ask_for_plan(wave):
     """Returns (Plan, None), or (fallback Plan, error) if the LLM fails twice."""
-    flags_text = "\n".join(f"- {name}: {p['what']}" for name, p in POLICY.items())
+    flags_text = "\n".join(f"- {name}: {p['what']}. Cost: {p['cost']}"
+                           for name, p in POLICY.items())
     messages = [
         {"role": "system", "content": RESPONSE_PROMPT.format(flags=flags_text)},
         {"role": "user", "content": wave_summary(wave)},
@@ -133,24 +149,35 @@ def decide(plan, current_flags):
 
 
 # --- Step 3: carry it out ------------------------------------------------------
+def label(flag):
+    return POLICY[flag]["label"] if flag in POLICY else flag
+
+
 def ask_human(step):
-    print(f"\n  PHD1 wants to turn ON '{step['flag']}' (HIGH risk)")
-    print(f"  What it does: {POLICY[step['flag']]['what']}")
-    print(f"  PHD1's reason: {step['why']}")
-    answer = input("  Approve? (y/n): ").strip().lower()
-    return answer == "y"
+    """Show the trade-off, then ask. Pressing Enter (or Ctrl+C) means NO."""
+    body = Text()
+    body.append(POLICY[step["flag"]]["what"] + "\n\n", style="bold")
+    body.append("Why   ", style="dim")
+    body.append(step["why"] + "\n")              # Text, not markup: LLM words stay plain text
+    body.append("Cost  ", style="dim")
+    body.append(POLICY[step["flag"]]["cost"])
+    console.print(Panel(body, title="Needs your approval", title_align="left",
+                        border_style="dark_orange", box=box.ROUNDED, padding=(1, 2)))
+    try:
+        return Confirm.ask("[bold]Approve?[/]", default=False)
+    except (EOFError, KeyboardInterrupt):
+        console.print()
+        return False
 
 
 def apply(flag):
-    """Switch a flag ON in Flagsmith. Returns True only if Flagsmith confirms."""
+    """Switch a flag ON in Flagsmith. Returns (True, "") only if Flagsmith confirms."""
     try:
         if switch_on(flag):
-            print(f"  Flagsmith: '{flag}' is now ON")
-            return True
-        print(f"  FAILED: Flagsmith did not confirm '{flag}' is ON")
+            return True, ""
+        return False, "Flagsmith did not confirm the change"
     except Exception as e:                       # bad key, network, lookup problem
-        print(f"  FAILED to switch ON '{flag}': {e}")
-    return False
+        return False, str(e)
 
 
 # --- Step 4: the incident log ---------------------------------------------------
@@ -203,55 +230,157 @@ class IncidentLog:
         return path
 
 
+# --- What you see in the terminal ------------------------------------------------
+def status_line(flags, state):
+    """One line with where both flags stand, shown at the start and the end."""
+    line = Text()
+    line.append("model ", style="dim")
+    line.append(MODEL.split("/")[-1])
+    for flag in POLICY:
+        line.append("  ·  ", style="dim")
+        line.append(f"{label(flag).lower()} ", style="dim")
+        if flags is None:
+            line.append("unknown", style="red")
+        elif flags.get(flag):
+            line.append("on", style="green")
+        else:
+            line.append("off")
+    line.append("  ·  ", style="dim")
+    line.append(state, style="green" if state == "ready" else "")
+    return line
+
+
+def safe_read_flags():
+    try:
+        return read_flags()
+    except Exception as e:
+        console.print(f"[red]Could not read flags from Flagsmith:[/] {escape(str(e))}")
+        return None
+
+
+def section(title):
+    console.print()
+    console.rule(f"[bold]{title}[/]", align="left", style="grey37")
+
+
+def show_wave(wave):
+    minutes = to_minutes(wave["last"]) - to_minutes(wave["first"])
+    domains = wave["fake_domains"]
+    shown = ", ".join(domains[:2]) + (f", +{len(domains) - 2} more" if len(domains) > 2 else "")
+    first, last = wave["lures"][0], wave["lures"][-1]
+
+    grid = Table.grid(padding=(0, 2))
+    grid.add_column(style="dim")
+    grid.add_column()
+    grid.add_row("Imitates", Text(wave["brand"], style="bold"))
+    grid.add_row("Emails", Text.assemble(f"{wave['count']} in {minutes} minutes  ",
+                                         (f"{wave['first']} → {wave['last']}", "dim")))
+    grid.add_row("Fake domains", Text.assemble(f"{len(domains)}  ", (shown, "dim")))
+    # Subjects are written by attackers: shown as plain Text, never as markup.
+    grid.add_row("First lure", Text.assemble((f"{first[0]}  ", "dim"), first[2]))
+    grid.add_row("Latest lure", Text.assemble((f"{last[0]}  ", "dim"), last[2]))
+    console.print(grid)
+
+
 def main(emails_path="data/inbox_today.csv", results_path="results_today.csv"):
-    waves, _ = find_waves(load_csv(emails_path), load_csv(results_path))
+    emails = load_csv(emails_path)
+    flags_before = safe_read_flags()
+
+    console.print()
+    console.print("[bold]PHD1[/]  [dim]phishing incident response · PHishDhawan[/]")
+    console.print(status_line(flags_before, "ready"))
+    console.print(f"[dim]Reading {len(emails)} emails from {escape(emails_path)}[/]")
+
+    waves, _ = find_waves(emails, load_csv(results_path))
     if not waves:
-        print("No phishing wave detected. Nothing to do.")
+        console.print("\nNo phishing wave detected. Nothing to do.")
+        return
+    if flags_before is None:
+        console.print("[red]Stopping: PHD1 won't act without knowing the current flags.[/]")
         return
 
     wave = waves[0]
     started = time.perf_counter()
-    print(f"WAVE: {wave['count']} phishing emails imitating {wave['brand']} "
-          f"({wave['first']}-{wave['last']})")
+    section("WAVE DETECTED")
+    show_wave(wave)
 
-    plan, error = ask_for_plan(wave)
+    section("ASSESSMENT")
+    with console.status("[dim]Asking the model for a response plan…[/]", spinner="line"):
+        plan, error = ask_for_plan(wave)
+    console.print(Text(plan.summary))
     if error:
-        print(f"(LLM problem, using safe fallback: {error})")
-    print(f"\nPHD1's assessment: {plan.summary}")
+        console.print(f"[red]Model problem, safe fallback used:[/] {escape(error)}")
+    console.print(f"[dim]For the response plan, the model only got {len(wave['lures'])} subjects "
+                  f"+ {len(wave['fake_domains'])} fake domains. No email bodies. No links opened.[/]")
+    rejected = [s for s in decide(plan, flags_before) if s["mode"] == "rejected"]
+    if rejected:
+        console.print(f"[dim]Ignored {len(rejected)} proposal(s) that are not allowed actions.[/]")
 
-    steps = decide(plan, read_flags())
-    first_action_seconds = None
+    section("RESPONSE")
+    steps = decide(plan, flags_before)
     log = IncidentLog(wave, plan.summary, error)
-    print("\nResponse:")
+    first_action_seconds = None
+    status = {}
+
+    # Low-risk steps run first, before anyone is asked anything.
     for step in steps:
         flag = step["flag"]
         if step["mode"] == "auto":
-            if apply(flag):
+            with console.status(f"[dim]Switching on {label(flag)}…[/]", spinner="line"):
+                ok, problem = apply(flag)
+            if ok:
                 if first_action_seconds is None:
                     first_action_seconds = time.perf_counter() - started
-                print(f"  DID ALONE (low risk): {flag} - {step['why']}")
+                status[flag] = Text.assemble(("✓ on", "green"),
+                                             (f"  {first_action_seconds:.1f}s after detection", "dim"))
                 log.add("PHD1", f"switched ON {flag}", "low risk, did it alone", step["why"])
             else:
-                log.add("PHD1", f"tried to switch ON {flag}", "FAILED", step["why"])
+                status[flag] = Text("✗ failed", style="red")
+                log.add("PHD1", f"tried to switch ON {flag}", f"FAILED: {problem}", step["why"])
         elif step["mode"] == "ask":
-            log.add("PHD1", f"asked to switch ON {flag}", "high risk, waiting for a human", step["why"])
-            if ask_human(step):
-                if apply(flag):
-                    print(f"  APPROVED by human: {flag}")
-                    log.add(APPROVER, f"approved {flag}", "switched ON", "")
-                else:
-                    log.add(APPROVER, f"approved {flag}", "FAILED to switch ON", "")
-            else:
-                print(f"  DECLINED by human: {flag} stays OFF")
-                log.add(APPROVER, f"declined {flag}", "stays OFF", "")
+            status[flag] = Text("waiting", style="dark_orange")
+        elif step["mode"] == "skipped":
+            status[flag] = Text("already on", style="dim")
+            log.add("code", f"skipped {flag}", step["note"], step["why"])
         else:
-            print(f"  {step['mode'].upper()}: {flag} ({step['note']})")
-            log.add("code", f"{step['mode']} {flag}", step["note"], step["why"])
+            status[flag] = Text("ignored: not an allowed action", style="dim")
+            log.add("code", f"rejected {flag}", step["note"], step["why"])
 
-    if first_action_seconds is not None:
-        print(f"\nFirst protection applied {first_action_seconds:.1f}s after the wave was found.")
+    table = Table(box=box.SIMPLE_HEAD, header_style="dim", pad_edge=False)
+    for column in ("Step", "Risk", "Who decides", "Status"):
+        table.add_column(column)
+    for step in steps:
+        risk = step.get("risk", "-")
+        who = {"auto": "PHD1", "ask": "you"}.get(step["mode"], "code")
+        table.add_row(Text(label(step["flag"])),
+                      Text(risk, style="dark_orange" if risk == "high" else ""),
+                      who, status[step["flag"]])
+    console.print(table)
+
+    # High-risk steps: stop and ask a human.
+    for step in steps:
+        if step["mode"] != "ask":
+            continue
+        flag = step["flag"]
+        log.add("PHD1", f"asked to switch ON {flag}", "high risk, waiting for a human", step["why"])
+        if ask_human(step):
+            with console.status(f"[dim]Switching on {label(flag)}…[/]", spinner="line"):
+                ok, problem = apply(flag)
+            if ok:
+                console.print(f"[green]✓[/] {label(flag)} is on  [dim]approved by {escape(APPROVER)}[/]")
+                log.add(APPROVER, f"approved {flag}", "switched ON", "")
+            else:
+                console.print(f"[red]✗ {label(flag)} failed to switch on:[/] {escape(problem)}")
+                log.add(APPROVER, f"approved {flag}", f"FAILED to switch ON: {problem}", "")
+        else:
+            console.print(f"{label(flag)} stays off  [dim]declined by {escape(APPROVER)}[/]")
+            log.add(APPROVER, f"declined {flag}", "stays OFF", "")
+
+    console.print()
+    console.print(status_line(safe_read_flags(), "done"))   # read again: show the REAL end state
     path = log.save(first_action_seconds)
-    print(f"Incident log saved: {path}")
+    console.print(f"[dim]Incident log saved → {escape(path)}[/]")
+    console.print()
 
 
 if __name__ == "__main__":
