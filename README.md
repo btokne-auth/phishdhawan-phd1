@@ -67,6 +67,7 @@ Two flags in one Flagsmith environment, both starting **OFF**:
 ## Results
 
 - **Triage on today's inbox:** 16/16 correct (`results_today.csv`, scored by `eval.py`).
+- **Triage on the hard test inbox:** 28/30 correct (93%), with 0 phishing emails marked safe (`results_hard.csv`). The 30 emails add a second brand wave (StreamBox), a slow attack spread over 3 hours that must not count as a wave, real alerts that look scary, scams from brands the code doesn't know, Taglish emails and a second prompt injection. Both misses were over-cautious: a job offer asking for an ID (expected needs_human) and a landlord announcing a new bank account, with no link and no data request (expected safe), were both flagged as phishing.
 - **Triage on the original practice set:** 24/25 correct, with 0 phishing emails marked safe.
 - **Response:** wave found (9 emails, 8 fake domains); first protection applied about 2–4 seconds after detection on real runs.
 
@@ -96,6 +97,8 @@ Then, in two terminals:
 
 ```bash
 python inbox.py                 # terminal 1: open http://127.0.0.1:8000
+                                #   (python inbox.py hard: the 30-email test inbox,
+                                #    python inbox.py all: all 46 emails together)
 python respond.py               # terminal 2: PHD1 responds to the wave
 ```
 
@@ -107,6 +110,8 @@ python flag_admin.py                                     # check the Flagsmith s
 python -m unittest discover tests                        # safety tests, no AI or internet needed
 python agent.py data/inbox_today.csv results_today.csv   # re-run the AI triage
 python eval.py data/inbox_today_labels.csv results_today.csv
+python agent.py data/inbox_hard.csv results_hard.csv     # the harder test inbox
+python eval.py data/inbox_hard_labels.csv results_hard.csv
 ```
 
 The model is `openai/gpt-oss-120b` on Groq by default. To switch providers, set `LLM_API_KEY`, `LLM_BASE_URL` and `LLM_MODEL` in `.env`.
