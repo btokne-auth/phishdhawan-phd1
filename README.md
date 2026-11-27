@@ -61,7 +61,7 @@ Two flags in one Flagsmith environment, both starting **OFF**:
 - **Links are never opened** anywhere, only read as text. The inbox shows email text as plain text, never as HTML.
 - **Safe defaults.** Pressing Enter at "Approve?" means No. If the AI fails twice, PHD1 falls back to the low-risk step only.
 - **Everything is logged.** Each run saves `incidents/incident-<time>.md` with the assessment, the lures, and a table of every action, who took it and why.
-- **Tested without AI.** `tests/test_safety.py` proves the policy gate and the wave rule hold.
+- **Tested without AI.** `tests/test_safety.py` proves the policy gate and the wave rule hold. These tests run on GitHub on every push.
 - **Secrets stay local.** All keys live in `.env`, which is git-ignored.
 
 ## Results
@@ -133,7 +133,7 @@ phishdhawan-phd1/
 ## Built before vs during Toggle Wars
 
 - **Before (practice project):** the email triage part: `agent.py`, `tools.py`, `prompts.py`, `eval.py` and the 25-email practice set. It started as a timed practice run for another challenge.
-- **During Toggle Wars (from Nov 26, 2026):** everything about waves and flags: `wave.py`, `respond.py`, `flags.py`, `flag_admin.py`, the live inbox, today's inbox data and the safety tests.
+- **During Toggle Wars (from Nov 26, 2026):** everything about waves and flags: `wave.py`, `respond.py`, `flags.py`, `flag_admin.py`, the live inbox, today's inbox data, the safety tests and the GitHub test workflow.
 
 ## Limitations
 
