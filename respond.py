@@ -164,7 +164,7 @@ def ask_human(step):
     console.print(Panel(body, title="Needs your approval", title_align="left",
                         border_style="dark_orange", box=box.ROUNDED, padding=(1, 2)))
     try:
-        return Confirm.ask("[bold]Approve?[/]", default=False)
+        return Confirm.ask("[bold]Approve?[/]", default=False, console=console)
     except (EOFError, KeyboardInterrupt):
         console.print()
         return False
@@ -258,6 +258,18 @@ def safe_read_flags():
         return None
 
 
+def read_flags_after(switched_on):
+    """Flagsmith takes a few seconds to share a change with every reader.
+    Re-read until the flags PHD1 switched on show as on (up to ~10 seconds)."""
+    flags = None
+    for attempt in range(6):
+        flags = safe_read_flags()
+        if flags is None or all(flags.get(f) for f in switched_on):
+            return flags
+        time.sleep(2)
+    return flags
+
+
 def section(title):
     console.print()
     console.rule(f"[bold]{title}[/]", align="left", style="grey37")
@@ -321,6 +333,7 @@ def main(emails_path="data/inbox_today.csv", results_path="results_today.csv"):
     log = IncidentLog(wave, plan.summary, error)
     first_action_seconds = None
     status = {}
+    switched_on = []
 
     # Low-risk steps run first, before anyone is asked anything.
     for step in steps:
@@ -331,6 +344,7 @@ def main(emails_path="data/inbox_today.csv", results_path="results_today.csv"):
             if ok:
                 if first_action_seconds is None:
                     first_action_seconds = time.perf_counter() - started
+                switched_on.append(flag)
                 status[flag] = Text.assemble(("✓ on", "green"),
                                              (f"  {first_action_seconds:.1f}s after detection", "dim"))
                 log.add("PHD1", f"switched ON {flag}", "low risk, did it alone", step["why"])
@@ -367,6 +381,7 @@ def main(emails_path="data/inbox_today.csv", results_path="results_today.csv"):
             with console.status(f"[dim]Switching on {label(flag)}…[/]", spinner="line"):
                 ok, problem = apply(flag)
             if ok:
+                switched_on.append(flag)
                 console.print(f"[green]✓[/] {label(flag)} is on  [dim]approved by {escape(APPROVER)}[/]")
                 log.add(APPROVER, f"approved {flag}", "switched ON", "")
             else:
@@ -377,7 +392,9 @@ def main(emails_path="data/inbox_today.csv", results_path="results_today.csv"):
             log.add(APPROVER, f"declined {flag}", "stays OFF", "")
 
     console.print()
-    console.print(status_line(safe_read_flags(), "done"))   # read again: show the REAL end state
+    with console.status("[dim]Checking the final state in Flagsmith…[/]", spinner="line"):
+        flags_after = read_flags_after(switched_on)   # read again: show the REAL end state
+    console.print(status_line(flags_after, "done"))
     path = log.save(first_action_seconds)
     console.print(f"[dim]Incident log saved → {escape(path)}[/]")
     console.print()
