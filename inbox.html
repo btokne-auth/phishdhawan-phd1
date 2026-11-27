@@ -386,7 +386,7 @@ function renderReader() {
     const label = el("div", "label mono");
     label.append(icon("warn"), document.createTextNode("PHISHING WARNING"));
     warning.append(label, el("p", "",
-      `This email pretends to be ${state.brand} but isn't. Don't tap its links or share your details; open your bank's app directly instead.`));
+      `This email pretends to be ${email.brand || state.brand} but isn't. Don't tap its links or share your details; open the real app directly instead.`));
     message.append(warning);
     if (animateWarning) requestAnimationFrame(() => requestAnimationFrame(() => warning.classList.remove("enter")));
   }

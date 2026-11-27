@@ -5,29 +5,42 @@ inbox.py - a tiny local inbox that reacts live to PHD1's flags.
   block_external_links    ON -> every external link is blocked (even real ones)
 
 Run it, then open http://127.0.0.1:8000 in your browser:
-    python inbox.py
+    python inbox.py          the demo inbox (16 emails, Lumen Bank wave)
+    python inbox.py hard     the harder test inbox (30 emails, StreamBox wave)
+    python inbox.py all      both together (46 emails, both waves)
+For "hard" and "all", run agent.py on the hard inbox first so results_hard.csv exists.
 
 Demo safety: links are never real, clickable links here. Email text is shown
 as plain text (never as HTML), because it is written by attackers.
 """
 
 import json
+import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from flags import FLAG_BANNER, FLAG_BLOCK_LINKS, read_flags
 from tools import extract_urls
 from wave import find_waves, load_csv
 
-EMAILS_PATH = "data/inbox_today.csv"
-OLDER_PATH = "data/inbox_older.csv"     # display only: older mail, already triaged
-RESULTS_PATH = "results_today.csv"
+TODAY = ("data/inbox_today.csv", "results_today.csv")   # (emails, AI verdicts)
+HARD = ("data/inbox_hard.csv", "results_hard.csv")
+INBOXES = {
+    # name: ([(emails, verdicts), ...], older mail shown under "Earlier")
+    "today": ([TODAY], "data/inbox_older.csv"),
+    "hard": ([HARD], None),
+    "all": ([TODAY, HARD], "data/inbox_older.csv"),
+}
+INBOX = sys.argv[1] if len(sys.argv) > 1 else "today"
+if INBOX not in INBOXES:
+    sys.exit(f"Unknown inbox '{INBOX}'. Use one of: {', '.join(INBOXES)}")
+SOURCES, OLDER_PATH = INBOXES[INBOX]
 HOST, PORT = "127.0.0.1", 8000   # only reachable from this laptop
 
 # Display realism only: today's emails the user has already opened.
 ALREADY_READ = {"T01", "T03", "T07", "T11"}
 
 
-def to_view(e, day, time_, read, in_wave):
+def to_view(e, day, time_, read, wave_brand):
     return {
         "id": e["id"],
         "day": day,
@@ -38,16 +51,22 @@ def to_view(e, day, time_, read, in_wave):
         "body": e["body"],
         "links": extract_urls(e["body"]),
         "read": read,
-        "in_wave": in_wave,
+        "in_wave": wave_brand is not None,
+        "brand": wave_brand,                     # which brand this email's wave imitates
     }
 
 
 def build_state():
     """Everything the page needs: emails, which ones get a banner, live flags."""
-    emails = load_csv(EMAILS_PATH)
-    results = load_csv(RESULTS_PATH)
+    emails, results = [], []
+    for emails_path, results_path in SOURCES:
+        emails += load_csv(emails_path)
+        try:
+            results += load_csv(results_path)
+        except FileNotFoundError:                # AI hasn't sorted this inbox yet
+            pass
     waves, _ = find_waves(emails, results)
-    wave_ids = {eid for w in waves for eid in w["ids"]}
+    wave_brand = {eid: w["brand"] for w in waves for eid in w["ids"]}
     brand = waves[0]["brand"] if waves else None
 
     try:
@@ -55,10 +74,12 @@ def build_state():
     except Exception as e:                       # Flagsmith unreachable, bad key...
         flags, flags_error = {FLAG_BANNER: False, FLAG_BLOCK_LINKS: False}, str(e)
 
-    today = [to_view(e, "Today", e["received_at"], e["id"] in ALREADY_READ, e["id"] in wave_ids)
-             for e in reversed(emails)]          # newest first, like a real inbox
+    emails.sort(key=lambda e: e["received_at"], reverse=True)   # newest first, like a real inbox
+    today = [to_view(e, "Today", e["received_at"], e["id"] in ALREADY_READ, wave_brand.get(e["id"]))
+             for e in emails]
     try:
-        older = [to_view(e, e["day"], e["time"], e["read"] == "yes", False) for e in load_csv(OLDER_PATH)]
+        older = [to_view(e, e["day"], e["time"], e["read"] == "yes", None)
+                 for e in load_csv(OLDER_PATH)] if OLDER_PATH else []
     except FileNotFoundError:
         older = []
 
@@ -88,5 +109,11 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"Inbox running at http://{HOST}:{PORT}  (Ctrl + C to stop)")
+    print(f"Inbox '{INBOX}' running at http://{HOST}:{PORT}  (Ctrl + C to stop)")
+    for emails_path, results_path in SOURCES:
+        try:
+            load_csv(results_path)
+        except FileNotFoundError:
+            print(f"Note: {results_path} is missing, so its wave isn't marked yet. Run first:\n"
+                  f"    python agent.py {emails_path} {results_path}")
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
