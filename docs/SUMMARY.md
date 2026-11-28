@@ -29,5 +29,6 @@ PHD1 is a **phishing incident-response agent**. It watches an inbox for a **phis
 | `docs/DESIGN.md` | Design rules for the inbox page and the terminal output, and the references used |
 | `docs/TESTING.md` | The three test inboxes, results, every miss, and the safety tests |
 | `docs/DEMO.md` | Checklist for running or recording the demo |
+| `docs/COMMANDS.md` | Every command, with what it does, plus quick fixes |
 | `docs/BUILD-LOG.md` | What was built before vs during Toggle Wars, day by day |
 | `docs/screenshots/` | Screenshots used in the README |

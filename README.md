@@ -113,6 +113,8 @@ Two flags in one Flagsmith environment, both starting **OFF**:
 
 ## Run it
 
+**Every command in one place:** [`docs/COMMANDS.md`](docs/COMMANDS.md) (running, tests, tunnel, Git, quick fixes).
+
 You need Python 3.10+, a free [Groq](https://console.groq.com) API key, and a free [Flagsmith](https://flagsmith.com) account.
 
 ```bash
@@ -207,6 +209,7 @@ phishdhawan-phd1/
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Design rules for the inbox page and the terminal output |
 | [`docs/TESTING.md`](docs/TESTING.md) | All three test inboxes, every miss, and the safety tests |
 | [`docs/DEMO.md`](docs/DEMO.md) | Checklist for running or recording the demo |
+| [`docs/COMMANDS.md`](docs/COMMANDS.md) | Command cheat sheet: running, tests, tunnel, Git, quick fixes |
 | [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) | What was built before vs during Toggle Wars |
 | [`dry_runs/`](dry_runs/README.md) | Neiko's independent test runs on a second laptop: setup, demo and accuracy |
 
