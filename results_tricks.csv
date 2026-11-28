@@ -1,0 +1,12 @@
+id,verdict,confidence,reason,risky_links,overridden
+K1,phishing,0.97,Impersonates a bank using a lookalike domain and urges clicking a claim link.,www.lumenbank-cares.com/claim,False
+K2,phishing,0.99,"Lookalike domain, sender mismatch, urgent request for credentials",lumen-bank-aid.com/verify,False
+K3,phishing,0.99,Sender domain mismatch and lookalike URL used to lure credential entry,http://lumenbank.ph@lumen-login.net/secure,False
+K4,phishing,0.98,Look‑alike domain and sender mismatch used to lure to malicious link,http://xn--lumenbnk-9xa.ph/statement,False
+K5,safe,0.96,Legitimate shipping notification from matching domain with no suspicious indicators.,,False
+K6,safe,0.95,A benign personal request with no suspicious content or links.,,False
+K7,phishing,0.97,"Urgent request to verify KYC via link and MPIN, typical credential theft attempt",http://pesopay-wallet.com/kyc,False
+K8,phishing,0.97,Urgent request to confirm MPIN and OTP via a suspicious verification link,pesopay-kyc.net/verify,False
+K9,phishing,0.95,Urgent login alert with a link to a suspicious domain asking for credentials,www.pesopay-secure.co/login,False
+K10,phishing,0.97,Unsolicited cashback claim asking for MPIN via a suspicious promo domain,http://pesopay-promo.site/claim,False
+K11,phishing,0.96,Urgent request to update wallet via a suspicious third‑party domain,http://pesopay-update.xyz/update,False
