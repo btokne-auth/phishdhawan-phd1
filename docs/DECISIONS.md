@@ -54,4 +54,6 @@ Turning protection off is the riskier direction: it's what an attacker would wan
 - **Live mode:** PHD1 watching the inbox as emails arrive, reacting as the wave builds instead of reading one file.
 - **Flagsmith segments:** switch warnings on only for the people who actually received the fake emails, instead of everyone.
 - **A narrower key:** an API key that can only change these two flags.
+- **Defang only the fake emails' links when the banners are on:** real links keep working, so it stays low risk, while the full link block remains a human's call. (Pau and Neiko's idea.)
+- **Screenshot blanking in native apps:** a web page can't stop screenshots, but native apps can (Android can make a screen show black in screenshots, Windows can exclude a window from capture, iOS can hide content while recording). A native mail app could blank blocked emails in captures. A photo of the screen is still possible, which is why the network layer matters. (Pau and Neiko's idea.)
 - **Protection beyond the inbox:** the inbox can't stop someone typing a link into another tab by hand. A network-level block (like a DNS filter) can, and PHD1 could switch that on through a flag too.

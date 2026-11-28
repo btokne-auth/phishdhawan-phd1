@@ -255,6 +255,12 @@ function toast(text, ms = 1800) {
 
 const bannerOn = () => state.flags.phishing_warning_banner;
 const linksBlocked = () => state.flags.block_external_links;
+// "Defanged" links (hxxp://site[.]com) stay readable, but no browser opens them.
+// While links are blocked, every link on screen is shown this way, so reading,
+// typing, copying or screen-text tools (OCR) only ever get an address that goes nowhere.
+const URL_RE = /https?:\/\/[^\s"'<>]+/gi;
+const defang = url => url.replace(/^http/i, "hxxp").replace(/\./g, "[.]");
+const safeText = text => linksBlocked() ? text.replace(URL_RE, defang) : text;
 const suspicious = e => bannerOn() && e.in_wave;
 const isRead = e => e.read || read.has(e.id);
 const listTime = e => e.day === "Today" ? e.time : e.day;
@@ -313,7 +319,7 @@ function renderList() {
     }
     right.append(el("span", "mono", listTime(email)), icon("chev", "chev"));
     top.append(el("span", "from", email.from_name), right);
-    content.append(top, el("div", "subject", email.subject), el("div", "preview", email.body));
+    content.append(top, el("div", "subject", email.subject), el("div", "preview", safeText(email.body)));
     item.append(content);
     item.onclick = () => select(email.id);
     list.append(item);
@@ -350,7 +356,7 @@ function bodyWithLinks(email) {
     const at = rest.indexOf(url);
     if (at === -1) return;
     body.append(document.createTextNode(rest.slice(0, at)));
-    body.append(el("span", "link" + (linksBlocked() ? " blocked" : ""), url));
+    body.append(el("span", "link" + (linksBlocked() ? " blocked" : ""), linksBlocked() ? defang(url) : url));
     if (linksBlocked()) {
       const key = email.id + ":" + i;
       const chip = el("button", "chip mono");
@@ -411,14 +417,12 @@ document.addEventListener("keydown", e => {
   if (e.key === "/" && document.activeElement !== search) { e.preventDefault(); search.focus(); }
   if (e.key === "Escape" && document.activeElement === search) { search.value = ""; query = ""; search.blur(); renderList(); }
 });
-// Copying while links are blocked gives a "defanged" version of every link
-// (hxxp://site[.]com): still readable, but no browser will open it if pasted.
-const defang = url => url.replace(/^http/i, "hxxp").replace(/\./g, "[.]");
+// Copying while links are blocked gives the "defanged" version of every link.
 document.addEventListener("copy", e => {
   if (!linksBlocked()) return;
   const text = String(window.getSelection());
-  if (!/https?:\/\//i.test(text)) return;
-  e.clipboardData.setData("text/plain", text.replace(/https?:\/\/[^\s"'<>]+/gi, defang));
+  if (!/(https?|hxxps?):\/\//i.test(text)) return;   // no link in the copied text
+  e.clipboardData.setData("text/plain", text.replace(URL_RE, defang));
   e.preventDefault();
   toast("Link blocked. Copied as unclickable text.", 2500);
 });

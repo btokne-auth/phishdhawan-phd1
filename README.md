@@ -84,7 +84,7 @@ Two flags in one Flagsmith environment, both starting **OFF**:
 | Flag | Risk | What it does in the inbox |
 | --- | --- | --- |
 | `phishing_warning_banner` | low | Warning icon and a "PHISHING WARNING" label on emails imitating the attacked brand |
-| `block_external_links` | high | Every link in every email is paused with a "BLOCKED" chip, real ones too. Copying a link gives a safe, unclickable version (`hxxp://site[.]com`) |
+| `block_external_links` | high | Every link in every email is paused with a "BLOCKED" chip, real ones too. Links are shown, and copied, as safe unclickable text (`hxxp://site[.]com`) |
 
 - **Reading flags:** the Flagsmith Python SDK with the server-side environment key (`flags.py`). Both PHD1 and the inbox read flags this way.
 - **Switching flags:** the Flagsmith Admin API with an Organisation API key (`flag_admin.py`). Before changing anything, it looks the flag up and refuses unless it finds exactly one match.
