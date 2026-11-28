@@ -52,6 +52,31 @@ flowchart LR
 | Block all links | **A human**, after seeing why and the cost (high risk) |
 | Switch any flag off | **Only a human.** PHD1 can only switch flags on |
 
+## Why it's built this way
+
+### Why feature flags
+
+A **feature flag** is an on/off switch for part of an app, flipped from a dashboard or an API without changing or redeploying the app. Teams normally use flags to release features gradually, run A/B tests, turn features on for certain users only, change settings remotely, and, most importantly here, as **kill switches**: an emergency off (or on) for risky behaviour.
+
+That makes flags a natural fit for a phishing wave, which moves in minutes:
+
+- **Instant.** The warning and the link block are already built into the inbox, just switched off. Flipping a flag changes the app in seconds, with no code change or redeploy. On real runs, PHD1's first protection landed about 2–4 seconds after the wave was found.
+- **Reversible.** Any switch can be turned back off in one click. That's what makes the risk tiers meaningful: banners change nothing important, while the link block also breaks real links until someone turns it off.
+- **A wall between the agent and the app.** PHD1 never touches the inbox's code or data; it can only flip switches, and the app decides what each switch means. If the AI misbehaves, the damage is limited to those switches, and code narrows it to just two.
+- **Separate keys.** The inbox can only read flags. Only PHD1's switching code holds the Admin API key.
+- **A second record.** Flagsmith keeps its own history of flag changes, separate from PHD1's incident reports.
+
+### Why the agent lives in the terminal
+
+- **It's the defender's side.** PHD1 is a tool for whoever responds to an attack, not for the person reading email. Responders work with terminals, scripts and logs. The inbox page shows the other side: what the people being protected see.
+- **A human can truly stop it.** At the approval prompt, PHD1 waits. Nothing continues until someone answers, and pressing Enter means No.
+- **Clear output is part of the job.** The terminal output reads like a report: what was found, what the AI saw, who decides each step, and the why and the cost before every risky one.
+- **Anyone can check it.** Emails, verdicts and reports are plain files, and every step is a command, so anyone can clone the repo and get the same result.
+
+**In one line:** the agent lives where defenders work and where a human can stop it; the app never talks to the agent; Flagsmith is the only bridge between them.
+
+More in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+
 ## How Flagsmith is used
 
 Two flags in one Flagsmith environment, both starting **OFF**:
