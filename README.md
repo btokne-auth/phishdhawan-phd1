@@ -195,6 +195,7 @@ phishdhawan-phd1/
 - Flagsmith takes a few seconds to share a change with every reader, so the inbox updates about 3–10 seconds after a switch.
 - Only waves get a response. A single scam (like the lone PayWave email, T13) is labelled phishing but doesn't trigger banners.
 - PHD1 handles the first wave it finds per run.
+- PHD1 protects inside the inbox: warnings, blocked links and safe copies. It can't stop someone from typing an address into another browser tab by hand; that needs network-level protection such as a DNS filter. A future PHD1 could switch on a flag for that layer too.
 - The demo inbox is local, with made-up emails and fictional brands. Real email systems also use sender authentication (SPF, DKIM, DMARC) and reputation data.
 
 ## The name

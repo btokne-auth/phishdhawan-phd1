@@ -10,7 +10,7 @@ Modelled on the structure of iOS Mail, with a strict minimal style.
 - **Rows, not cards.** No boxes around emails, no coloured side stripes.
 - **The warning is a label plus one sentence:** "▲ PHISHING WARNING" in mono, then plain words saying what to do instead.
 - **Blocked links stay visible but gray,** with a "🔒 BLOCKED" chip, so the reader sees what was stopped.
-- **Copying a blocked link gives a safe version.** While the link block is on, copied links come out "defanged" (`hxxp://site[.]com/...`), the way security teams share dangerous links: still readable, but no browser opens it if someone pastes it. A small "Nice try 😄" message explains why. (Idea from Neiko's testing.)
+- **Copying a blocked link gives a safe version.** While the link block is on, copied links come out "defanged" (`hxxp://site[.]com/...`), the way security teams share dangerous links: still readable, but no browser opens it if someone pastes it. A short message says so: "Link blocked. Copied as unclickable text." (Idea from Neiko's testing.)
 - **The flag states live in a demo panel under the window,** not inside the inbox, so the inbox looks like a real app.
 - **Safety:** email text is inserted as text only, never as HTML; links are never opened.
 - **Accessibility:** light and dark themes (auto, or switchable), reduced motion, reduced transparency and higher contrast are respected, and text meets AA contrast.

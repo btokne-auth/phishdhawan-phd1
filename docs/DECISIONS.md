@@ -54,3 +54,4 @@ Turning protection off is the riskier direction: it's what an attacker would wan
 - **Live mode:** PHD1 watching the inbox as emails arrive, reacting as the wave builds instead of reading one file.
 - **Flagsmith segments:** switch warnings on only for the people who actually received the fake emails, instead of everyone.
 - **A narrower key:** an API key that can only change these two flags.
+- **Protection beyond the inbox:** the inbox can't stop someone typing a link into another tab by hand. A network-level block (like a DNS filter) can, and PHD1 could switch that on through a flag too.

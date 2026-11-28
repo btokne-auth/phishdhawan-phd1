@@ -420,7 +420,7 @@ document.addEventListener("copy", e => {
   if (!/https?:\/\//i.test(text)) return;
   e.clipboardData.setData("text/plain", text.replace(/https?:\/\/[^\s"'<>]+/gi, defang));
   e.preventDefault();
-  toast("Nice try \u{1F604} Links are blocked, so PHD1 copied a safe, unclickable version", 3500);
+  toast("Link blocked. Copied as unclickable text.", 2500);
 });
 
 document.querySelectorAll(".tool").forEach(b => b.onclick = () => toast(`${b.dataset.tip} isn't available in this demo inbox`));
