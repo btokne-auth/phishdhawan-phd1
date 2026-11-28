@@ -1,0 +1,17 @@
+id,verdict,confidence,reason,risky_links,overridden
+T01,safe,0.96,Legitimate bank statement notice with no suspicious links or requests,,False
+T02,safe,0.95,Legitimate shipping notification with matching sender and domain,,False
+T03,safe,0.96,Legitimate enrollment reminder with no suspicious links or urgency cues.,,False
+T04,phishing,0.98,Lookalike domain and sender mismatch used to lure victim to claim money,http://lumenbank-cares.com/claim,False
+T05,phishing,0.99,"Lookalike domain, sender mismatch, urgent request for personal/financial info",http://lumenbnk.ph/ayuda,False
+T06,phishing,0.99,Sender mismatch and lookalike domain used to steal credentials with urgent verification link,http://lumen-bank-aid.com/verify,False
+T07,safe,0.97,"Personal, non‑malicious request with no links or suspicious content",,False
+T08,phishing,0.99,"Lookalike domain, sender mismatch, urgent financial assistance claim link",http://lumenbank-cares.com/claim?ref=last,False
+T09,phishing,0.99,"Lookalike domain, sender mismatch, urgent request to click a malicious link.",http://lumenbank-secure.net/cancel,False
+T10,phishing,0.99,"Lookalike domain, sender mismatch, urgent request for OTP via link",http://lumenbamk.ph/dispute,False
+T11,safe,0.93,Informational payment notice with no suspicious links or requests,,False
+T12,phishing,0.99,"Lookalike domain, sender mismatch, urgent request to click a verification link.",http://lumenbank-verify.com/device,False
+T13,phishing,0.99,Urgent request to update card details via a lookalike domain and sender mismatch,http://paywave-help.com/limit,False
+T14,phishing,0.99,"Lookalike domain, sender mismatch, urgent lock threat with malicious unlock link",http://lumenbank-alerts.co/unlock,False
+T15,phishing,0.98,Lookalike domain and sender mismatch with instructions to ignore warnings indicate credential theft attempt,http://lumenbank-testcenter.com/verify,False
+T16,spam,0.96,"Unsolicited promotional email with a sales link, no credential request.",,False
