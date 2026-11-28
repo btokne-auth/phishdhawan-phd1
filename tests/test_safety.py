@@ -88,6 +88,42 @@ class OddLinks(unittest.TestCase):
         self.assertEqual(get_domain("http://[broken/login"), "")
 
 
+class LinkTricks(unittest.TestCase):
+    """Links written in sneaky ways must still be found, and their real destination named."""
+
+    def test_links_without_http_are_found(self):
+        from tools import extract_urls
+        self.assertEqual(extract_urls("Claim at www.lumenbank-cares.com/claim today."),
+                         ["www.lumenbank-cares.com/claim"])
+        self.assertEqual(extract_urls("Go to lumen-bank-aid.com/verify, then reply."),
+                         ["lumen-bank-aid.com/verify"])
+
+    def test_email_addresses_and_normal_text_are_not_links(self):
+        from tools import extract_urls
+        self.assertEqual(extract_urls("Email joy@example.com at 9 a.m., e.g. Nov. 26"), [])
+
+    def test_at_sign_trick_names_the_real_destination(self):
+        from tools import run_all_checks
+        email = {"id": "X", "received_at": "09:00", "from_name": "Promo",
+                 "from_address": "promo@shop.example", "reply_to": "", "subject": "Hi",
+                 "body": "Verify at http://lumenbank.ph@evil-login.com/verify"}
+        found = run_all_checks(email)["lookalikes"]
+        self.assertIn(("evil-login.com", "lumenbank.ph"),
+                      [(l["domain"], l["imitates"]) for l in found])
+
+    def test_punycode_lookalike_is_flagged(self):
+        from tools import lookalike_domain
+        self.assertTrue(lookalike_domain("xn--lumenbnk-9xa.ph")["is_lookalike"])
+
+    def test_punycode_link_does_not_hide_the_brand(self):
+        from tools import run_all_checks
+        from wave import imitated_brand
+        email = {"id": "X", "received_at": "09:00", "from_name": "Lumen Bank",
+                 "from_address": "alerts@xn--lumenbnk-9xa.ph", "reply_to": "", "subject": "Hi",
+                 "body": "Log in: http://xn--lumenbnk-9xa.ph/login"}
+        self.assertEqual(imitated_brand(email, run_all_checks(email)), "lumenbank.ph")
+
+
 class TheWaveRule(unittest.TestCase):
     """find_waves(): plain code decides what counts as a wave, not the AI."""
 

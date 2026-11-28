@@ -258,8 +258,13 @@ const linksBlocked = () => state.flags.block_external_links;
 // "Defanged" links (hxxp://site[.]com) stay readable, but no browser opens them.
 // While links are blocked, every link on screen is shown this way, so reading,
 // typing, copying or screen-text tools (OCR) only ever get an address that goes nowhere.
-const URL_RE = /https?:\/\/[^\s"'<>]+/gi;
-const defang = url => url.replace(/^http/i, "hxxp").replace(/\./g, "[.]");
+// Same rule as tools.py: http(s) links, www.site.com, and bare site.com/path.
+const URL_RE = new RegExp(String.raw`https?:\/\/[^\s"'<>]+|(?<![@\w.-])(?:[a-z0-9-]+\.)+(?:com|net|org|ph|co|info|biz|xyz|site|online|top|app|io|me|link|click|shop|store|live|cc|tk|ml|ga|cf|gq|ly|to|us|uk|asia|vip|club|icu|buzz|work|support|help|services|page|cloud|email|tech|ru|cn)\b(?:\/[^\s"'<>]*)?`, "gi");
+const defang = url => {
+  const end = (url.match(/[.,);\]]+$/) || [""])[0];        // keep sentence punctuation as is
+  const link = url.slice(0, url.length - end.length);
+  return link.replace(/^http/i, "hxxp").replace(/\./g, "[.]") + end;
+};
 const safeText = text => linksBlocked() ? text.replace(URL_RE, defang) : text;
 const suspicious = e => bannerOn() && e.in_wave;
 const isRead = e => e.read || read.has(e.id);
@@ -421,8 +426,9 @@ document.addEventListener("keydown", e => {
 document.addEventListener("copy", e => {
   if (!linksBlocked()) return;
   const text = String(window.getSelection());
-  if (!/(https?|hxxps?):\/\//i.test(text)) return;   // no link in the copied text
-  e.clipboardData.setData("text/plain", text.replace(URL_RE, defang));
+  const safe = text.replace(URL_RE, defang);
+  if (safe === text && !text.includes("[.]")) return;   // no link in the copied text
+  e.clipboardData.setData("text/plain", safe);
   e.preventDefault();
   toast("Link blocked. Copied as unclickable text.", 2500);
 });

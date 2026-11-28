@@ -45,6 +45,9 @@ All three misses went the cautious way (something flagged as phishing that wasn'
 - repeats and extra spaces can't sneak a step past the gate
 - if the AI proposes nothing, code still turns on warning banners (never the link block)
 - odd links in emails, like defanged `site[.]com` or broken URLs, are read or skipped, never a crash
+- links without `http://` (`www.site.com`, `site.com/path`) are found; email addresses and normal text are not
+- the `@` trick names the real destination and the brand it pretends to be
+- punycode (`xn--`) domains are flagged, without hiding which brand the email imitates
 - 5 phishing emails within an hour is a wave; 4 is not; 5 spread over hours is not; safe emails never count
 
 These run on GitHub on every push (`.github/workflows/tests.yml`).

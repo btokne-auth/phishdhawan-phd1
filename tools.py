@@ -39,10 +39,15 @@ def get_domain(text):
     # "Defanged" links like site[.]com or site(.)com are common in security
     # emails; read them as normal dots instead of crashing on the brackets.
     text = text.replace("[.]", ".").replace("(.)", ".").replace("[dot]", ".")
+    text = text.replace("hxxp", "http")
     if "@" in text and "://" not in text:
         return text.split("@")[-1]
+    if "://" not in text:                        # www.site.com or site.com/path
+        text = "http://" + text
     try:
-        return urlparse(text).netloc.split(":")[0]   # drop a port like :8080
+        # .hostname is where the browser really goes: it drops the port, and
+        # anything before an "@" (http://lumenbank.ph@evil.com goes to evil.com).
+        return urlparse(text).hostname or ""
     except ValueError:                           # still not a valid URL: skip it, don't crash
         return ""
 
@@ -72,9 +77,19 @@ def edit_distance(a, b):
 
 # --- Tool 1: extract URLs -----------------------------------------------------
 
+# A link is anything a browser would open if it were pasted or typed:
+# http(s)://..., www.site.com, or a bare site.com/path with a common ending.
+# (Not email addresses: joy@example.com is skipped.)
+LINK_ENDINGS = "com|net|org|ph|co|info|biz|xyz|site|online|top|app|io|me|link|click|shop|store|live|cc|tk|ml|ga|cf|gq|ly|to|us|uk|asia|vip|club|icu|buzz|work|support|help|services|page|cloud|email|tech|ru|cn"
+LINK_PATTERN = re.compile(
+    r"https?://[^\s\"'<>]+"
+    r"|(?<![@\w.-])(?:[a-z0-9-]+\.)+(?:" + LINK_ENDINGS + r")\b(?:/[^\s\"'<>]*)?",
+    re.IGNORECASE)
+
+
 def extract_urls(body):
-    """Find every http/https link in the email text."""
-    urls = re.findall(r"https?://[^\s\"'<>]+", body)
+    """Find every link in the email text, with or without http://."""
+    urls = LINK_PATTERN.findall(body)
     return [u.rstrip(".,);]") for u in urls]   # trim punctuation stuck to the end
 
 
@@ -83,6 +98,11 @@ def extract_urls(body):
 def lookalike_domain(domain):
     """Is this domain pretending to be one of our known brands?"""
     domain = domain.lower()
+    if any(part.startswith("xn--") for part in domain.split(".")):
+        # Punycode: the domain uses non-English letters, the classic way to fake
+        # look-alike characters (a Cyrillic "а" instead of "a").
+        return {"is_lookalike": True, "imitates": None,
+                "reason": "uses look-alike letters (punycode xn--)"}
     for brand, official in KNOWN_BRANDS.items():
         if is_official(domain, official):
             return {"is_lookalike": False, "imitates": None, "reason": "official domain"}
@@ -94,6 +114,21 @@ def lookalike_domain(domain):
             return {"is_lookalike": True, "imitates": official,
                     "reason": f"{distance} letter(s) away from {official}"}
     return {"is_lookalike": False, "imitates": None, "reason": "no known brand imitated"}
+
+
+def hidden_destination(url):
+    """The "@" trick: in http://lumenbank.ph@evil.com the browser ignores
+    everything before the "@" and goes to evil.com. Returns a lookalike-style
+    result if the link uses it, else None."""
+    if "@" not in url.split("/")[2 if "://" in url else 0]:
+        return None
+    shown = url.split("://")[-1].split("@")[0]
+    real = get_domain(url)
+    shown_flat = shown.lower().replace("-", "").replace(".", "")
+    imitates = next((official for brand, official in KNOWN_BRANDS.items() if brand in shown_flat),
+                    lookalike_domain(real)["imitates"])
+    return {"domain": real, "is_lookalike": True, "imitates": imitates,
+            "reason": f"hides its real address: it shows '{shown}' but goes to {real}"}
 
 
 # --- Tool 3: sender mismatch --------------------------------------------------
@@ -132,6 +167,7 @@ def run_all_checks(email):
     urls = extract_urls(email["body"])
     domains = [get_domain(email["from_address"])] + [get_domain(u) for u in urls]
     lookalikes = [dict(domain=d, **lookalike_domain(d)) for d in domains]
+    lookalikes += [h for h in map(hidden_destination, urls) if h]
     return {
         "urls": urls,
         "lookalikes": [l for l in lookalikes if l["is_lookalike"]],

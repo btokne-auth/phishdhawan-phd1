@@ -96,6 +96,7 @@ Two flags in one Flagsmith environment, both starting **OFF**:
 - **Attacker text is data, never instructions.** Emails and subjects are wrapped in tags and labelled untrusted in every prompt. The dataset includes a prompt-injection email (T15) that talks to "the AI security agent".
 - **The response plan sees very little.** For the plan, the model only gets the wave summary: subjects, fake domains and times. No email bodies. (The earlier triage step does read each email, wrapped as untrusted data.)
 - **Links are never opened** anywhere, only read as text. The inbox shows email text as plain text, never as HTML.
+- **Sneaky links still count.** Links without `http://` (`www.site.com`, `site.com/claim`) are found, checked and blocked like any other. The `@` trick (`http://lumenbank.ph@evil.com` really goes to evil.com) is caught and the real destination named, and punycode look-alike domains (`xn--…`) are flagged.
 - **Safe defaults.** Pressing Enter at the approval prompt means No. If the AI fails twice, PHD1 falls back to the low-risk step only.
 - **Everything is logged.** Each run saves `incidents/incident-<time>.md` with the assessment, the lures, and a table of every action, who took it and why.
 - **Tested without AI.** `tests/test_safety.py` proves the policy gate and the wave rule hold. These tests run on GitHub on every push.

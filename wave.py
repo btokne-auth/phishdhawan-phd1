@@ -26,8 +26,9 @@ def imitated_brand(email, checks):
     """Which brand is this email pretending to be? Returns its official domain.
     First choice: a lookalike domain the code found. Second: the brand name in
     the display name (e.g. 'Lumen Bank' sending from gmail.com)."""
-    if checks["lookalikes"]:
-        return checks["lookalikes"][0]["imitates"]
+    for lookalike in checks["lookalikes"]:
+        if lookalike["imitates"]:
+            return lookalike["imitates"]
     name = email["from_name"].lower().replace(" ", "")
     for brand, official in KNOWN_BRANDS.items():
         if brand in name:
