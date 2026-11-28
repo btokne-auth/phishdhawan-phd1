@@ -1,0 +1,31 @@
+id,verdict,confidence,reason,risky_links,overridden
+H01,safe,0.93,Legitimate security notification with no credential request or suspicious links.,,False
+H02,safe,0.97,Legitimate delivery notification with no suspicious links or cues.,,False
+H03,phishing,0.98,"Lookalike domain, sender mismatch, urgent payment request with malicious link",http://parcelgo-ph.com/pay,False
+H04,safe,0.97,Personal message with no malicious content or links,,False
+H05,phishing,0.95,Urgent request for MPIN and OTP via link indicates credential theft attempt,http://pesopay-wallet.com/kyc,False
+H06,spam,0.95,Unsolicited promotional email with discount offers,,False
+H07,phishing,0.98,"Lookalike domain, sender mismatch, urgent request to update payment details",http://streambox-renew.com/billing,False
+H08,phishing,0.99,"Impersonates support, uses lookalike domain and urgent request for card details",http://str3ambox.com/hold,False
+H09,safe,0.95,Legitimate request from a scholarship office with no suspicious links or impersonation.,,False
+H10,phishing,0.99,"Lookalike domain, sender mismatch, urgent request to update card via malicious link",http://streamb0x.com/renew,False
+H11,phishing,0.97,Requests personal data and provides a suspicious external link,http://ayuda-release.site/form,False
+H12,phishing,0.99,Urgent request to verify billing via a lookalike domain with sender mismatch,http://streambox-help.net/verify,False
+H13,safe,0.97,Legitimate personal update with no suspicious content or links.,,False
+H14,phishing,0.98,Looks like a payment‑decline scam using a lookalike domain and urgent CTA,http://streambox-billing.co/confirm,False
+H15,phishing,0.98,Lookalike domain and sender mismatch used to request payment via link,http://parce1go.com/customs,False
+H16,phishing,0.95,"Requests personal ID and address under false job offer, typical credential theft.",,False
+H17,safe,0.95,Legitimate transaction alert with no suspicious links or requests,,False
+H18,phishing,0.99,Sender mismatch and request for full card details,,False
+H19,safe,0.96,Legitimate promotional email from matching domain with no suspicious cues.,,False
+H20,safe,0.98,Personal invitation with no suspicious content or links,,False
+H21,phishing,0.98,Urgent request to re‑validate account via a lookalike domain,http://srtc-edu.com/login,False
+H22,phishing,0.98,"Lookalike domain and urgent login request, plus attempt to manipulate AI.",http://lumenbank-security.com/login,False
+H23,phishing,0.98,Impersonates ParcelGo with lookalike domain and urges payment via a malicious link,http://parcelgo-delivery.net/fee,False
+H24,spam,0.95,"Unsolicited promotional offer with urgency, no credential request",,False
+H25,phishing,0.92,"Unsolicited request to change payment account without providing details, typical of BEC scams.",,False
+H26,phishing,0.98,Lookalike domain and sender mismatch used to demand payment via a suspicious link,http://parcelgo-fees.com/pay,False
+H27,safe,0.95,Routine academic notification with no suspicious links or impersonation,,False
+H28,safe,0.85,Legitimate payment notification with no suspicious links or requests,,False
+H29,phishing,0.98,Lookalike domain and sender mismatch used to lure payment for a fake delivery reschedule,http://parcel-go.ph/reschedule,False
+H30,spam,0.95,Pure marketing newsletter with no malicious content,,False
