@@ -21,6 +21,14 @@ Then it writes an incident log. A small local inbox reads the same flags from Fl
 | --- | --- |
 | ![A real delivery email whose tracking link is blocked as well](docs/screenshots/real-link-blocked.png) | ![The email telling "the AI security agent" to turn warnings off, shown with a phishing warning and its link blocked](docs/screenshots/injection.png) |
 
+| Copying a blocked link gives a dead address | Sneaky links are blocked too |
+| --- | --- |
+| ![Copying a blocked link: the toast says "Link blocked. Copied as unclickable text." and the copied link reads hxxp://lumenbank-alerts[.]co/unlock](docs/screenshots/safe-copy.png) | ![The tricks inbox: links written without http://, the @ trick and a punycode domain, all shown defanged and BLOCKED](docs/screenshots/sneaky-links.png) |
+
+**A wave from a brand PHD1 had never heard of:** five fake "PesoPay" e-wallet emails from five different domains, grouped by sender name and warned (`python inbox.py tricks`).
+
+![Five fake PesoPay emails marked suspicious, one opened with "This email pretends to be PesoPay but isn't" and its www link blocked](docs/screenshots/unknown-brand-wave.png)
+
 More detail in [`docs/`](docs/SUMMARY.md): design decisions, the story, testing, and the demo checklist.
 
 ## How it works
