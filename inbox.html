@@ -144,6 +144,7 @@
   .body { margin-top: var(--s5); white-space: pre-wrap; font-size: 16px; line-height: 1.65; letter-spacing: -0.005em; }
   .link { color: var(--ink); text-decoration: underline; text-decoration-color: var(--ink3); text-underline-offset: 3px; cursor: not-allowed; }
   .link.blocked { color: var(--ink2); text-decoration: none; }
+  .chip, .why { user-select: none; -webkit-user-select: none; }   /* labels, not email text: never copied */
   .chip { display: inline-flex; align-items: center; gap: var(--s1); margin-left: 6px; height: 18px; padding: 0 6px;
           border-radius: 4px; box-shadow: inset 0 0 0 1px var(--hair); vertical-align: 2px; }
   .chip svg { width: 9px; height: 9px; }
@@ -244,12 +245,12 @@ function icon(name, className) {
   if (className) svg.setAttribute("class", className);
   return svg;
 }
-function toast(text) {
+function toast(text, ms = 1800) {
   const t = document.getElementById("toast");
   t.textContent = text;
   t.classList.add("show");
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => t.classList.remove("show"), 1800);
+  toast.timer = setTimeout(() => t.classList.remove("show"), ms);
 }
 
 const bannerOn = () => state.flags.phishing_warning_banner;
@@ -410,6 +411,18 @@ document.addEventListener("keydown", e => {
   if (e.key === "/" && document.activeElement !== search) { e.preventDefault(); search.focus(); }
   if (e.key === "Escape" && document.activeElement === search) { search.value = ""; query = ""; search.blur(); renderList(); }
 });
+// Copying while links are blocked gives a "defanged" version of every link
+// (hxxp://site[.]com): still readable, but no browser will open it if pasted.
+const defang = url => url.replace(/^http/i, "hxxp").replace(/\./g, "[.]");
+document.addEventListener("copy", e => {
+  if (!linksBlocked()) return;
+  const text = String(window.getSelection());
+  if (!/https?:\/\//i.test(text)) return;
+  e.clipboardData.setData("text/plain", text.replace(/https?:\/\/[^\s"'<>]+/gi, defang));
+  e.preventDefault();
+  toast("Nice try \u{1F604} Links are blocked, so PHD1 copied a safe, unclickable version", 3500);
+});
+
 document.querySelectorAll(".tool").forEach(b => b.onclick = () => toast(`${b.dataset.tip} isn't available in this demo inbox`));
 const mailHeader = document.querySelector(".mailbox .chrome");
 new ResizeObserver(() => document.getElementById("mailbox").style.setProperty("--header-h", mailHeader.offsetHeight + "px")).observe(mailHeader);
