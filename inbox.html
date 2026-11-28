@@ -356,6 +356,7 @@ function select(id) {
 // ---------- Message ----------
 function bodyWithLinks(email) {
   const body = el("div", "body");
+  const reasons = [];            // "why blocked" notes go after the text, never mid-sentence
   let rest = email.body;
   email.links.forEach((url, i) => {
     const at = rest.indexOf(url);
@@ -370,11 +371,12 @@ function bodyWithLinks(email) {
       const why = el("span", "why", "All links are paused while PHD1's link block is on.");
       why.hidden = !openWhy.has(key);
       chip.onclick = () => { why.hidden = !why.hidden; why.hidden ? openWhy.delete(key) : openWhy.add(key); };
-      body.append(chip, why);
+      body.append(chip);
+      reasons.push(why);
     }
     rest = rest.slice(at + url.length);
   });
-  body.append(document.createTextNode(rest));
+  body.append(document.createTextNode(rest), ...reasons);
   return body;
 }
 
