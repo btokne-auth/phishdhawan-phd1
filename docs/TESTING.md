@@ -43,6 +43,8 @@ All three misses went the cautious way (something flagged as phishing that wasn'
 - a flag that's already on is skipped
 - low-risk steps run before anyone is asked
 - repeats and extra spaces can't sneak a step past the gate
+- if the AI proposes nothing, code still turns on warning banners (never the link block)
+- odd links in emails, like defanged `site[.]com` or broken URLs, are read or skipped, never a crash
 - 5 phishing emails within an hour is a wave; 4 is not; 5 spread over hours is not; safe emails never count
 
 These run on GitHub on every push (`.github/workflows/tests.yml`).

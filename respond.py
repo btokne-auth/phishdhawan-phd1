@@ -153,6 +153,14 @@ def decide(plan, current_flags):
             risk = POLICY[name]["risk"]
             steps.append({"flag": name, "risk": risk, "why": action.why,
                           "mode": "auto" if risk == "low" else "ask"})
+    # Code's minimum: a wave confirmed by code always gets warning banners,
+    # even if the AI proposed nothing (or only things that got rejected).
+    if FLAG_BANNER not in seen:
+        why = "Code minimum: a confirmed wave always gets warning banners."
+        if current_flags.get(FLAG_BANNER):
+            steps.append({"flag": FLAG_BANNER, "mode": "skipped", "why": why, "note": "already ON"})
+        else:
+            steps.append({"flag": FLAG_BANNER, "risk": "low", "why": why, "mode": "auto"})
     # Low-risk steps first, so protection starts before waiting on a human.
     order = {"auto": 0, "ask": 1, "skipped": 2, "rejected": 3}
     return sorted(steps, key=lambda s: order[s["mode"]])

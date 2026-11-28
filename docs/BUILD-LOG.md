@@ -30,6 +30,7 @@ Flagsmith setup (account, project, the two flags, both OFF) was done the night b
 
 - Made-up personal email addresses switched to reserved example domains; all three test sets re-run (16/16, 28/30, 24/25).
 - Terminal wording rewritten in plainer language, with the Flagsmith flag names shown in the table.
+- Two fixes found by the fresh-setup test: defanged links like `site[.]com` no longer crash the link checks, and a confirmed wave always gets warning banners even if the AI proposes nothing. Safety tests: 10 → 14.
 - README screenshots and this `docs/` folder.
 - Planned: a fresh-setup test on a second laptop, following only the README.
 - Planned: the demo video.

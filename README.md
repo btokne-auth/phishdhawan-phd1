@@ -92,7 +92,7 @@ Two flags in one Flagsmith environment, both starting **OFF**:
 
 ## Safety
 
-- **Code has the final say.** The AI's plan is checked against a fixed policy. Unknown actions are rejected, and flags that are already on are skipped. High risk always waits for a human, whatever the AI says.
+- **Code has the final say.** The AI's plan is checked against a fixed policy. Unknown actions are rejected, and flags that are already on are skipped. High risk always waits for a human, whatever the AI says. And if the AI proposes nothing, code still turns on the warning banners for a wave it confirmed.
 - **Attacker text is data, never instructions.** Emails and subjects are wrapped in tags and labelled untrusted in every prompt. The dataset includes a prompt-injection email (T15) that talks to "the AI security agent".
 - **The response plan sees very little.** For the plan, the model only gets the wave summary: subjects, fake domains and times. No email bodies. (The earlier triage step does read each email, wrapped as untrusted data.)
 - **Links are never opened** anywhere, only read as text. The inbox shows email text as plain text, never as HTML.

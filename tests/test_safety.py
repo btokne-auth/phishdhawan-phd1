@@ -37,12 +37,20 @@ class TheGate(unittest.TestCase):
         self.assertEqual(self.modes(plan(FLAG_BANNER)), {FLAG_BANNER: "auto"})
 
     def test_high_risk_always_asks_a_human(self):
-        self.assertEqual(self.modes(plan(FLAG_BLOCK_LINKS)), {FLAG_BLOCK_LINKS: "ask"})
+        self.assertEqual(self.modes(plan(FLAG_BLOCK_LINKS))[FLAG_BLOCK_LINKS], "ask")
 
     def test_unknown_action_is_rejected(self):
         # e.g. an injected email convinces the LLM to propose something else
         modes = self.modes(plan("disable_spam_filter", "whitelist_sender"))
-        self.assertEqual(set(modes.values()), {"rejected"})
+        self.assertEqual(modes["disable_spam_filter"], "rejected")
+        self.assertEqual(modes["whitelist_sender"], "rejected")
+
+    def test_empty_plan_still_gets_banners(self):
+        # if the AI proposes nothing, code still applies its minimum: warning banners
+        self.assertEqual(self.modes(plan()), {FLAG_BANNER: "auto"})
+
+    def test_minimum_never_adds_the_high_risk_flag(self):
+        self.assertNotIn(FLAG_BLOCK_LINKS, self.modes(plan()))
 
     def test_flag_already_on_is_skipped(self):
         modes = self.modes(plan(FLAG_BANNER), {FLAG_BANNER: True, FLAG_BLOCK_LINKS: False})
@@ -53,8 +61,8 @@ class TheGate(unittest.TestCase):
         self.assertEqual([s["mode"] for s in steps], ["auto", "ask"])
 
     def test_repeats_and_spaces_cannot_sneak_past(self):
-        modes = decide(plan(f" {FLAG_BLOCK_LINKS} ", FLAG_BLOCK_LINKS), ALL_OFF)
-        self.assertEqual([s["mode"] for s in modes], ["ask"])
+        steps = decide(plan(f" {FLAG_BLOCK_LINKS} ", FLAG_BLOCK_LINKS), ALL_OFF)
+        self.assertEqual([s["flag"] for s in steps if s["mode"] == "ask"], [FLAG_BLOCK_LINKS])
 
 
 def emails_at(*times, sender="alerts@lumen-bank-secure.com"):
@@ -66,6 +74,18 @@ def emails_at(*times, sender="alerts@lumen-bank-secure.com"):
                        "subject": "Verify your account", "body": "Log in now."})
         results.append({"id": eid, "verdict": "phishing"})
     return emails, results
+
+
+class OddLinks(unittest.TestCase):
+    """Emails can contain links that aren't valid URLs. They must never crash PHD1."""
+
+    def test_defanged_link_is_read_not_crashed(self):
+        from tools import get_domain
+        self.assertEqual(get_domain("http://lumen-bnk[.]com/login"), "lumen-bnk.com")
+
+    def test_broken_link_is_skipped(self):
+        from tools import get_domain
+        self.assertEqual(get_domain("http://[broken/login"), "")
 
 
 class TheWaveRule(unittest.TestCase):

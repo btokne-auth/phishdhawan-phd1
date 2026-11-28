@@ -11,7 +11,7 @@ PHD1 is a **phishing incident-response agent**. It watches an inbox for a **phis
 
 ## Principles (never break these)
 
-1. **Code has the final say.** The AI proposes; code checks every proposal against a fixed policy.
+1. **Code has the final say.** The AI proposes; code checks every proposal against a fixed policy, and a confirmed wave always gets at least the warning banners.
 2. **Risk lives in the policy, not in the AI's answer.** The AI can't make a step look safer than it is.
 3. **High risk always waits for a human.** Pressing Enter means No.
 4. **PHD1 only switches flags on.** Switching off is a human's job.

@@ -39,6 +39,8 @@ Feature flags are on/off switches for parts of an app, flipped from a dashboard 
 
 The tier is written in code (`POLICY` in `respond.py`). The AI's plan never sets it.
 
+**Code's minimum:** once code confirms a wave, warning banners always go on, even if the AI proposes nothing or only things that get rejected. The minimum never includes the high-risk link block; that still needs a human.
+
 ## The wave rule
 
 A wave is **5 or more phishing emails imitating the same brand within 60 minutes**. This is plain code (`wave.py`), not an AI judgement, so it can be tested exactly (see `tests/test_safety.py`). A single scam is still labelled phishing, but it doesn't trigger a response; a slow attack spread over hours doesn't count as a wave either.

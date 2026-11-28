@@ -36,9 +36,15 @@ def get_domain(text):
     'alerts@lumenbank.ph'      -> 'lumenbank.ph'
     """
     text = text.strip().lower()
+    # "Defanged" links like site[.]com or site(.)com are common in security
+    # emails; read them as normal dots instead of crashing on the brackets.
+    text = text.replace("[.]", ".").replace("(.)", ".").replace("[dot]", ".")
     if "@" in text and "://" not in text:
         return text.split("@")[-1]
-    return urlparse(text).netloc.split(":")[0]   # drop a port like :8080
+    try:
+        return urlparse(text).netloc.split(":")[0]   # drop a port like :8080
+    except ValueError:                           # still not a valid URL: skip it, don't crash
+        return ""
 
 
 def is_official(domain, official):
