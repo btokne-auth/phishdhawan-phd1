@@ -108,7 +108,8 @@ Two flags in one Flagsmith environment, both starting **OFF**:
 - **Triage on today's inbox:** 16/16 correct (`results_today.csv`, scored by `eval.py`).
 - **Triage on the hard test inbox:** 28/30 correct (93%), with 0 phishing emails marked safe (`results_hard.csv`). The 30 emails add a second brand wave (StreamBox), a slow attack spread over 3 hours that must not count as a wave, real alerts that look scary, scams from brands the code doesn't know, Taglish emails and a second prompt injection. Both misses were over-cautious: a job offer asking for an ID (expected needs_human) and a landlord announcing a new bank account, with no link and no data request (expected safe), were both flagged as phishing.
 - **Triage on the original practice set:** 24/25 correct, with 0 phishing emails marked safe.
-- **Response:** wave found (9 emails, 8 fake domains); first protection applied about 2–4 seconds after detection on real runs.
+- **Response:** wave found (9 emails, 8 fake domains); first protection applied about 2–4 seconds after detection on real runs (up to about 6 seconds on a slower connection).
+- **Reproduced independently:** Neiko re-ran everything on a second Windows laptop with his own Groq and Flagsmith accounts, following only this README. Same scores, and all 46 AI verdicts identical to ours. His notes, screenshots and run reports are in [`dry_runs/`](dry_runs/README.md).
 
 ## Run it
 
@@ -118,11 +119,12 @@ You need Python 3.10+, a free [Groq](https://console.groq.com) API key, and a fr
 git clone https://github.com/btokne-auth/phishdhawan-phd1.git
 cd phishdhawan-phd1
 python -m venv .venv
-source .venv/Scripts/activate     # Git Bash on Windows (.venv/bin/activate on Linux/Mac)
+source .venv/Scripts/activate     # Git Bash on Windows
+                                  # PowerShell: .venv\Scripts\Activate.ps1   Linux/Mac: source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-In Flagsmith, create two flags, `phishing_warning_banner` and `block_external_links`, both OFF. Then create a `.env` file:
+In Flagsmith, create two flags, `phishing_warning_banner` and `block_external_links`, both OFF. (New Flagsmith accounts also come with a sample flag; PHD1 ignores it.) Then create a `.env` file:
 
 ```
 GROQ_API_KEY=your_groq_key
@@ -131,6 +133,21 @@ FLAGSMITH_ADMIN_API_KEY=your_organisation_api_key
 FLAGSMITH_ENVIRONMENT_ID=your_environment_id
 APPROVER_NAME=your name
 ```
+
+Where each value comes from:
+
+- `GROQ_API_KEY`: console.groq.com → API Keys.
+- `FLAGSMITH_ENVIRONMENT_KEY`: Flagsmith → your environment → SDK Keys → **server-side** key (starts with `ser.`).
+- `FLAGSMITH_ADMIN_API_KEY`: Flagsmith → Organisation settings → API Keys.
+- `FLAGSMITH_ENVIRONMENT_ID`: the environment's **client-side** key (Flagsmith → SDK Keys; it's also in the dashboard URL after `/environment/`).
+
+The Groq key and the Organisation API key are shown only once, so paste them into `.env` right away. To check that all five values are filled in, without printing them:
+
+```bash
+python -c "from dotenv import dotenv_values; print({k: bool(v) for k, v in dotenv_values('.env').items()})"
+```
+
+All five should say `True`. Then `python flag_admin.py` checks the Flagsmith setup without changing anything.
 
 Then, in two terminals:
 
@@ -191,6 +208,7 @@ phishdhawan-phd1/
 | [`docs/TESTING.md`](docs/TESTING.md) | All three test inboxes, every miss, and the safety tests |
 | [`docs/DEMO.md`](docs/DEMO.md) | Checklist for running or recording the demo |
 | [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) | What was built before vs during Toggle Wars |
+| [`dry_runs/`](dry_runs/README.md) | Neiko's independent test runs on a second laptop: setup, demo and accuracy |
 
 ## Limitations
 

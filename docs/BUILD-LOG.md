@@ -35,7 +35,7 @@ Flagsmith setup (account, project, the two flags, both OFF) was done the night b
 - Waves are now found for any brand, not just the five PHD1 knows: unknown brands are grouped by sender name (a fake PesoPay wave in the tricks inbox). Safety tests: 19 → 21.
 - Blocked links are now shown and copied defanged (`hxxp://site[.]com`), so pasting, retyping or OCR-ing them goes nowhere (ideas from Pau and Neiko's testing).
 - README screenshots and this `docs/` folder.
-- Planned: a fresh-setup test on a second laptop, following only the README.
+- Fresh-setup test by Neiko on a second Windows laptop with his own accounts, following only the README: setup, approve/decline demo runs and accuracy re-runs, all passing, with identical AI verdicts (`dry_runs/`). His suggestions went into the README: the PowerShell command, where each `.env` value comes from, and a `.env` check.
 - Planned: the demo video.
 
 ## Day 4: Sun Nov 29

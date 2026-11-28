@@ -6,16 +6,16 @@
 - **Repo:** `main` at commit `b9047ab`
 - **Safety tests on this commit:** `python -m unittest discover tests` → expected `Ran 14 tests ... OK`. Result: ✅ 14 tests OK (2026-11-28 20:29)
 
-Results go to separate files inside `Dry_runs/`, so Pau's `results_today.csv` and `results_hard.csv` are not overwritten.
+Results go to separate files inside `dry_runs/`, so Pau's `results_today.csv` and `results_hard.csv` are not overwritten.
 
 ## Commands
 
 ```
-python agent.py data/inbox_today.csv Dry_runs/results_today_neiko.csv
-python eval.py data/inbox_today_labels.csv Dry_runs/results_today_neiko.csv
+python agent.py data/inbox_today.csv dry_runs/results_today_neiko.csv
+python eval.py data/inbox_today_labels.csv dry_runs/results_today_neiko.csv
 
-python agent.py data/inbox_hard.csv Dry_runs/results_hard_neiko.csv
-python eval.py data/inbox_hard_labels.csv Dry_runs/results_hard_neiko.csv
+python agent.py data/inbox_hard.csv dry_runs/results_hard_neiko.csv
+python eval.py data/inbox_hard_labels.csv dry_runs/results_hard_neiko.csv
 ```
 
 ## Results

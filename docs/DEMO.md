@@ -7,6 +7,7 @@
 - [ ] Terminal 1: `python inbox.py` (the 16-email demo inbox), then open http://127.0.0.1:8000.
 - [ ] Terminal 2: ready for `python respond.py`.
 - [ ] Inbox and terminal side by side; terminal font large enough to read in a video.
+- [ ] Maximize or size the terminal **before** running, and don't resize it during the run: the boxes are drawn for the width at that moment, and resizing re-wraps them. (From Neiko's test runs.)
 - [ ] Optional: the Flagsmith dashboard open in another tab, to show the flags flipping there too.
 
 ## The run

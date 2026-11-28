@@ -10,6 +10,8 @@
 
 Across all 71 emails: **0 phishing emails marked safe**, the worst kind of mistake.
 
+**Reproduced independently:** Neiko re-ran the demo and hard inboxes on a second Windows laptop, with his own Groq key, on a different day: 16/16 and 28/30 again, with all 46 verdicts identical (`dry_runs/results_today_neiko.csv`, `dry_runs/results_hard_neiko.csv`). The AI is called at `temperature=0`, which keeps answers stable. See [`dry_runs/`](../dry_runs/README.md).
+
 The AI never sees an answer key; `eval.py` compares its verdicts to the key afterwards. Every run sends each email as a fresh request, so the AI has no memory between emails or runs.
 
 ## What the hard inbox tests
