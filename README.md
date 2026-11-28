@@ -11,6 +11,18 @@ Then it writes an incident log. A small local inbox reads the same flags from Fl
 
 **The story:** a Filipino weekday morning. A fake "financial assistance" email arrives at 9 AM, then fake bank alerts from the same "bank". By the time the ninth one lands, PHD1 has already put warnings on them, and it's waiting for your yes to block the links.
 
+![A real PHD1 run in the terminal: the wave it found, what the AI saw, the warning banners switched on alone in 2.5 seconds, and the link block approved by a human](docs/screenshots/terminal-run.png)
+
+| Before PHD1 | After PHD1 |
+| --- | --- |
+| ![The same fake email with no warning and a live link](docs/screenshots/inbox-before.png) | ![The fake email with a phishing warning and the link blocked](docs/screenshots/inbox-protected.png) |
+
+| The cost of blocking: real links pause too | The injection email, still caught |
+| --- | --- |
+| ![A real delivery email whose tracking link is blocked as well](docs/screenshots/real-link-blocked.png) | ![The email telling "the AI security agent" to turn warnings off, shown with a phishing warning and its link blocked](docs/screenshots/injection.png) |
+
+More detail in [`docs/`](docs/SUMMARY.md): design decisions, the story, testing, and the demo checklist.
+
 ## How it works
 
 ```mermaid
@@ -139,6 +151,18 @@ phishdhawan-phd1/
 
 - **Before (practice project):** the email triage part: `agent.py`, `tools.py`, `prompts.py`, `eval.py` and the 25-email practice set. It started as a timed practice run for another challenge.
 - **During Toggle Wars (from Nov 26, 2026):** everything about waves and flags: `wave.py`, `respond.py`, `flags.py`, `flag_admin.py`, the live inbox, today's inbox data, the safety tests and the GitHub test workflow.
+
+## Docs
+
+| File | What's in it |
+| --- | --- |
+| [`docs/SUMMARY.md`](docs/SUMMARY.md) | What PHD1 is and the rules it never breaks |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Why a terminal agent, why Flagsmith, risk tiers, the wave rule, what's next |
+| [`docs/STORY.md`](docs/STORY.md) | The Filipino-morning scenario and the demo video plan |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | Design rules for the inbox page and the terminal output |
+| [`docs/TESTING.md`](docs/TESTING.md) | All three test inboxes, every miss, and the safety tests |
+| [`docs/DEMO.md`](docs/DEMO.md) | Checklist for running or recording the demo |
+| [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) | What was built before vs during Toggle Wars |
 
 ## Limitations
 
