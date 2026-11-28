@@ -69,3 +69,5 @@ python eval.py
 ```
 
 To see the hard inbox on the page: `python inbox.py hard` (30 emails) or `python inbox.py all` (all 46 together).
+
+To see how the link block handles sneaky links: `python inbox.py tricks` shows 6 emails (`data/inbox_tricks.csv`) with a `www.` link, a link without `http://`, the `@` trick, a punycode domain, a real courier's bare link, and an email address that must stay untouched. Switch the link block on to see every link defanged and BLOCKED. These are for display only; they aren't part of the AI scores.

@@ -136,7 +136,8 @@ Then, in two terminals:
 ```bash
 python inbox.py                 # terminal 1: open http://127.0.0.1:8000
                                 #   (python inbox.py hard: the 30-email test inbox,
-                                #    python inbox.py all: all 46 emails together)
+                                #    python inbox.py all: all 46 emails together,
+                                #    python inbox.py tricks: 6 emails with sneaky links)
 python respond.py               # terminal 2: PHD1 responds to the wave
 ```
 

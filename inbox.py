@@ -8,6 +8,8 @@ Run it, then open http://127.0.0.1:8000 in your browser:
     python inbox.py          the demo inbox (16 emails, Lumen Bank wave)
     python inbox.py hard     the harder test inbox (30 emails, StreamBox wave)
     python inbox.py all      both together (46 emails, both waves)
+    python inbox.py tricks   6 emails with sneaky links (www., no http://, the @ trick,
+                             punycode) to see how the link block handles them
 For "hard" and "all", run agent.py on the hard inbox first so results_hard.csv exists.
 
 Demo safety: links are never real, clickable links here. Email text is shown
@@ -29,6 +31,7 @@ INBOXES = {
     "today": ([TODAY], "data/inbox_older.csv"),
     "hard": ([HARD], None),
     "all": ([TODAY, HARD], "data/inbox_older.csv"),
+    "tricks": ([("data/inbox_tricks.csv", None)], None),   # display only: no AI verdicts
 }
 INBOX = sys.argv[1] if len(sys.argv) > 1 else "today"
 if INBOX not in INBOXES:
@@ -62,7 +65,7 @@ def build_state():
     for emails_path, results_path in SOURCES:
         emails += load_csv(emails_path)
         try:
-            results += load_csv(results_path)
+            results += load_csv(results_path) if results_path else []
         except FileNotFoundError:                # AI hasn't sorted this inbox yet
             pass
     waves, _ = find_waves(emails, results)
@@ -111,6 +114,8 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     print(f"Inbox '{INBOX}' running at http://{HOST}:{PORT}  (Ctrl + C to stop)")
     for emails_path, results_path in SOURCES:
+        if not results_path:
+            continue
         try:
             load_csv(results_path)
         except FileNotFoundError:

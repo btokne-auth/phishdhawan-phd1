@@ -1,0 +1,7 @@
+id,received_at,from_name,from_address,reply_to,subject,body
+K1,09:05,Lumen Bank Cares,assist@lumenbank-cares.com,,"Claim your 3,000 PHP assistance before noon","Good day! Your 3,000 PHP assistance is ready. Claim it at www.lumenbank-cares.com/claim before 12 noon today."
+K2,09:12,Lumen Bank,alerts@lumenbank-verify.com,,Verify your account to keep it active,Your account will be paused today unless you verify it at lumen-bank-aid.com/verify and enter your OTP.
+K3,09:20,Lumen Bank Security,security@lumenbank-alerts.co,,New sign-in to your account,"A new device signed in to your account. If this wasn't you, secure it here: http://lumenbank.ph@lumen-login.net/secure"
+K4,09:28,Lumen Bank,statements@xn--lumenbnk-9xa.ph,,Your November statement is ready,Your November statement is ready. View it at http://xn--lumenbnk-9xa.ph/statement
+K5,09:35,ParcelGo,updates@parcelgo.com,,Your parcel arrives today,Your parcel PG-80314 arrives today. Track it at parcelgo.com/track with your tracking number.
+K6,09:41,Ate Joy,joy.estira.family@example.com,,Pasabuy list,"Pau, send me your pasabuy list at joy.estira.family@example.com before lunch. Thanks!"
