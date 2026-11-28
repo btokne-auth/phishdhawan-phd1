@@ -43,7 +43,7 @@ The tier is written in code (`POLICY` in `respond.py`). The AI's plan never sets
 
 ## The wave rule
 
-A wave is **5 or more phishing emails imitating the same brand within 60 minutes**. This is plain code (`wave.py`), not an AI judgement, so it can be tested exactly (see `tests/test_safety.py`). A single scam is still labelled phishing, but it doesn't trigger a response; a slow attack spread over hours doesn't count as a wave either.
+A wave is **5 or more phishing emails imitating the same brand within 60 minutes**. For brands PHD1 knows (Lumen Bank, ParcelGo, StreamBox, PayWave, SRTC), the brand comes from look-alike domains or the sender name. For any other brand, the fakes are grouped by sender name without generic words, so "PesoPay", "PesoPay Support" and "PesoPay Security" count as one PesoPay wave, even though PesoPay isn't on the list. This is plain code (`wave.py`), not an AI judgement, so it can be tested exactly (see `tests/test_safety.py`). A single scam is still labelled phishing, but it doesn't trigger a response; a slow attack spread over hours doesn't count as a wave either.
 
 ## Why PHD1 never switches flags off
 

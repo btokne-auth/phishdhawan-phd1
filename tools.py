@@ -47,7 +47,8 @@ def get_domain(text):
     try:
         # .hostname is where the browser really goes: it drops the port, and
         # anything before an "@" (http://lumenbank.ph@evil.com goes to evil.com).
-        return urlparse(text).hostname or ""
+        host = urlparse(text).hostname or ""
+        return host[4:] if host.startswith("www.") else host   # www.site.com is site.com
     except ValueError:                           # still not a valid URL: skip it, don't crash
         return ""
 

@@ -32,6 +32,7 @@ Flagsmith setup (account, project, the two flags, both OFF) was done the night b
 - Terminal wording rewritten in plainer language, with the Flagsmith flag names shown in the table.
 - Two fixes found by the fresh-setup test: defanged links like `site[.]com` no longer crash the link checks, and a confirmed wave always gets warning banners even if the AI proposes nothing. Safety tests: 10 → 14.
 - Links written without `http://` are now found, checked, blocked and defanged too; the `@` trick names the real destination; punycode domains are flagged. Safety tests: 14 → 19.
+- Waves are now found for any brand, not just the five PHD1 knows: unknown brands are grouped by sender name (a fake PesoPay wave in the tricks inbox). Safety tests: 19 → 21.
 - Blocked links are now shown and copied defanged (`hxxp://site[.]com`), so pasting, retyping or OCR-ing them goes nowhere (ideas from Pau and Neiko's testing).
 - README screenshots and this `docs/` folder.
 - Planned: a fresh-setup test on a second laptop, following only the README.

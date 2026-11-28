@@ -8,9 +8,10 @@ Run it, then open http://127.0.0.1:8000 in your browser:
     python inbox.py          the demo inbox (16 emails, Lumen Bank wave)
     python inbox.py hard     the harder test inbox (30 emails, StreamBox wave)
     python inbox.py all      both together (46 emails, both waves)
-    python inbox.py tricks   6 emails with sneaky links (www., no http://, the @ trick,
-                             punycode) to see how the link block handles them
-For "hard" and "all", run agent.py on the hard inbox first so results_hard.csv exists.
+    python inbox.py tricks   11 emails: sneaky links (www., no http://, the @ trick,
+                             punycode) and a wave from a brand PHD1 doesn't know (PesoPay).
+                             Run agent.py on it first to see the PesoPay wave marked.
+For "hard", "all" and "tricks", run agent.py on that inbox first so its results file exists.
 
 Demo safety: links are never real, clickable links here. Email text is shown
 as plain text (never as HTML), because it is written by attackers.
@@ -31,7 +32,7 @@ INBOXES = {
     "today": ([TODAY], "data/inbox_older.csv"),
     "hard": ([HARD], None),
     "all": ([TODAY, HARD], "data/inbox_older.csv"),
-    "tricks": ([("data/inbox_tricks.csv", None)], None),   # display only: no AI verdicts
+    "tricks": ([("data/inbox_tricks.csv", "results_tricks.csv")], None),
 }
 INBOX = sys.argv[1] if len(sys.argv) > 1 else "today"
 if INBOX not in INBOXES:

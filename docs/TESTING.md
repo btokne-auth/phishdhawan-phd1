@@ -47,6 +47,7 @@ All three misses went the cautious way (something flagged as phishing that wasn'
 - odd links in emails, like defanged `site[.]com` or broken URLs, are read or skipped, never a crash
 - links without `http://` (`www.site.com`, `site.com/path`) are found; email addresses and normal text are not
 - the `@` trick names the real destination and the brand it pretends to be
+- a wave from a brand PHD1 doesn't know is still found, grouped by sender name; unrelated senders are not lumped into one wave
 - punycode (`xn--`) domains are flagged, without hiding which brand the email imitates
 - 5 phishing emails within an hour is a wave; 4 is not; 5 spread over hours is not; safe emails never count
 
@@ -70,4 +71,9 @@ python eval.py
 
 To see the hard inbox on the page: `python inbox.py hard` (30 emails) or `python inbox.py all` (all 46 together).
 
-To see how the link block handles sneaky links: `python inbox.py tricks` shows 6 emails (`data/inbox_tricks.csv`) with a `www.` link, a link without `http://`, the `@` trick, a punycode domain, a real courier's bare link, and an email address that must stay untouched. Switch the link block on to see every link defanged and BLOCKED. These are for display only; they aren't part of the AI scores.
+`python inbox.py tricks` shows 11 emails (`data/inbox_tricks.csv`):
+
+- sneaky links: a `www.` link, a link without `http://`, the `@` trick, a punycode domain, a real courier's bare link, and an email address that must stay untouched. Switch the link block on to see every link defanged and BLOCKED.
+- a wave from a brand PHD1 doesn't know: 5 fake **PesoPay** emails in 29 minutes, from 5 different domains and sender names like "PesoPay Support" and "PesoPay Security". Run `python agent.py data/inbox_tricks.csv results_tricks.csv` first, then switch the banners on to see all five warned as "pretends to be PesoPay". `python respond.py data/inbox_tricks.csv results_tricks.csv` responds to it like any other wave.
+
+This inbox has no answer key; it isn't part of the AI scores.

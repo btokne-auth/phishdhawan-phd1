@@ -8,9 +8,10 @@ Run it:  python wave.py data/inbox_today.csv results_today.csv
 """
 
 import csv
+import re
 import sys
 
-from tools import KNOWN_BRANDS, run_all_checks
+from tools import KNOWN_BRANDS, get_domain, run_all_checks
 
 WAVE_MIN_EMAILS = 5        # how many fakes of one brand count as a wave
 WAVE_WINDOW_MINUTES = 60   # ...within this many minutes
@@ -22,10 +23,24 @@ def to_minutes(hhmm):
     return int(hours) * 60 + int(minutes)
 
 
+# Words that say nothing about WHO an email claims to be ("PesoPay Support",
+# "PesoPay Security Team" and "PesoPay" are all PesoPay).
+GENERIC_NAME_WORDS = {
+    "support", "team", "security", "alert", "alerts", "billing", "help", "helpdesk",
+    "desk", "care", "cares", "assistance", "program", "fraud", "service", "services",
+    "customer", "official", "online", "noreply", "no", "reply", "notification",
+    "notifications", "account", "accounts", "verification", "center", "centre",
+    "admin", "info", "the", "and", "of", "it", "hr", "dept", "department",
+}
+
+
 def imitated_brand(email, checks):
-    """Which brand is this email pretending to be? Returns its official domain.
-    First choice: a lookalike domain the code found. Second: the brand name in
-    the display name (e.g. 'Lumen Bank' sending from gmail.com)."""
+    """Which brand is this email pretending to be?
+    1. A lookalike domain of a brand we know (returns its official domain).
+    2. A brand we know in the display name ('Lumen Bank' sending from gmail).
+    3. Any other brand: the display name without generic words, so fakes of
+       a brand we've never heard of ('PesoPay', 'PesoPay Support') still group
+       together. Returns that name, e.g. 'PesoPay'."""
     for lookalike in checks["lookalikes"]:
         if lookalike["imitates"]:
             return lookalike["imitates"]
@@ -33,7 +48,14 @@ def imitated_brand(email, checks):
     for brand, official in KNOWN_BRANDS.items():
         if brand in name:
             return official
-    return None
+    words = [w for w in re.findall(r"[A-Za-z0-9]+", email["from_name"])
+             if w.lower() not in GENERIC_NAME_WORDS]
+    return " ".join(words) or None
+
+
+def brand_key(brand):
+    """'PesoPay', 'Peso Pay' and 'pesopay' are the same brand."""
+    return brand.lower().replace(" ", "")
 
 
 def biggest_burst(hits):
@@ -55,23 +77,33 @@ def find_waves(emails, results):
     singles: {brand: count} for phishing that did NOT reach wave size"""
     verdicts = {r["id"]: r["verdict"] for r in results}
 
-    by_brand = {}
+    by_brand, labels = {}, {}
     for email in emails:
         if verdicts.get(email["id"]) != "phishing":
             continue
         checks = run_all_checks(email)
         brand = imitated_brand(email, checks)
         if brand:
-            by_brand.setdefault(brand, []).append({"email": email, "checks": checks})
+            key = brand_key(brand)
+            labels.setdefault(key, brand)          # show the first spelling seen
+            by_brand.setdefault(key, []).append({"email": email, "checks": checks})
 
     waves, singles = [], {}
-    for brand, hits in by_brand.items():
+    for key, hits in by_brand.items():
+        brand = labels[key]
         hits.sort(key=lambda h: to_minutes(h["email"]["received_at"]))
         burst = biggest_burst(hits)
         if len(burst) < WAVE_MIN_EMAILS:
             singles[brand] = len(hits)
             continue
-        fake_domains = sorted({l["domain"] for h in burst for l in h["checks"]["lookalikes"]})
+        fake_domains = set()
+        for h in burst:
+            found = {l["domain"] for l in h["checks"]["lookalikes"]}
+            if not found:      # a brand we don't know: every domain the fake used is suspect
+                found = {get_domain(h["email"]["from_address"])}
+                found |= {get_domain(u) for u in h["checks"]["urls"]}
+            fake_domains |= {d for d in found if d}
+        fake_domains = sorted(fake_domains)
         waves.append({
             "brand": brand,
             "count": len(burst),

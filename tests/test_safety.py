@@ -140,6 +140,23 @@ class TheWaveRule(unittest.TestCase):
         waves, _ = find_waves(*emails_at("08:00", "09:01", "10:02", "11:03", "12:04"))
         self.assertEqual(waves, [])
 
+    def test_wave_from_a_brand_we_dont_know(self):
+        # PesoPay isn't on PHD1's brand list: its fakes still group by sender name
+        names = ["PesoPay", "PesoPay Support", "PesoPay Security", "PesoPay", "PesoPay Team"]
+        emails, results = emails_at("10:00", "10:08", "10:15", "10:24", "10:31")
+        for i, (email, name) in enumerate(zip(emails, names)):
+            email["from_name"], email["from_address"] = name, f"alerts@pesopay-fake{i}.example"
+        waves, _ = find_waves(emails, results)
+        self.assertEqual([(w["brand"], w["count"]) for w in waves], [("PesoPay", 5)])
+
+    def test_different_unknown_senders_are_not_one_wave(self):
+        names = ["PesoPay", "Wallet King", "Lucky Spin", "Promo Hub", "Northwind Staffing"]
+        emails, results = emails_at("10:00", "10:05", "10:10", "10:15", "10:20")
+        for i, (email, name) in enumerate(zip(emails, names)):
+            email["from_name"], email["from_address"] = name, f"hi@fake{i}.example"
+        waves, _ = find_waves(emails, results)
+        self.assertEqual(waves, [])
+
     def test_safe_emails_are_never_counted(self):
         emails, results = emails_at("09:00", "09:05", "09:10", "09:15", "09:20")
         for r in results:
