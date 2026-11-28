@@ -9,7 +9,7 @@ PHD1 watches an inbox for a **phishing wave**: many fake emails imitating the sa
 
 Then it writes an incident log. A small local inbox reads the same flags from Flagsmith and changes live as PHD1 acts.
 
-**The story:** a Filipino weekday morning. A fake "financial assistance" email arrives at 9 AM, then fake bank alerts from the same "bank". By the time the ninth one lands, PHD1 has already put warnings on them, and it's waiting for your yes to block the links.
+**The story:** in the Philippines, the day starts before sunrise: work, school, the palengke, then hours of traffic. Many people are just getting through the day, with no time to double-check anything. Around 9 AM, an email offering "financial assistance" feels like a blessing, but it's phishing: one click and a few typed details leave people worse off. Then come fake bank alerts from the same "bank", the panic version of the same trap. PHD1 is the same morning with a defender on watch: by the time the ninth fake email lands, the warnings are already on, and PHD1 is waiting for a person's yes to block the links. More in [`docs/STORY.md`](docs/STORY.md).
 
 ![A real PHD1 run in the terminal: the wave it found, what the AI saw, the warning banners switched on alone in 2.5 seconds, and the link block approved by a human](docs/screenshots/terminal-run.png)
 
